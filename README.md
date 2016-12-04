@@ -70,7 +70,7 @@ Test pocketsphinx
 pocketsphinx_continuous
 ```
 
-Say something. (It should print lots of spam while doing some (very basic) speech recognition).
+Say something. (It should print lots of spam while doing some (very basic) speech recognition). Don't stop until it recognizes some speech. Our software depends on a working pocketsphinx installation.
 
 Download [CMU-Cam_Toolkit_v2] (http://www.speech.cs.cmu.edu/SLM/CMU-Cam_Toolkit_v2.tar.gz) and unpack it. Read the instructions in the README and edit the Makefile. To summarize, most PC hardware is what they call "little-endian" and it requires this change: Edit `CMU-Cam_Toolkit_v2/src/Makefile` and remove the # sign in front of this line:
 
@@ -175,7 +175,7 @@ It seems that the PocketSphinx folks were trying to add support for capitalized 
 *New  N UW
 ```
 
-Now train the new grammar, by using the capatalized form in a few sentences and pressing the Learn button. PocketSphinx will henceforth decide the capitalization depending on the context in which it appears. We tested it and it works! It capitalizes words like "New Mexico" and "The United States of America" but does not capitalize "altered states" nor "new pants". This is a wild idea, but maybe we could make a dictionary containing _both_ capitalized and un-capitalized words. That would save us the effort of going through and capitalizing all the proper names. The only question is would the resulting dictionary be too big? The solution is probably to propose a patch to make make PocketSphinx ignore case in the dictionary, using the capatalization as it is found in the corpus, not the dictionary.
+Now train the new grammar, by using the capatalized form in a few sentences and pressing the Learn button. PocketSphinx will henceforth decide the capitalization depending on the context in which it appears. We tested it and it works! It capitalizes words like "New Mexico" and "The United States of America" but does not capitalize "altered states" nor "new pants". This is a wild idea, but maybe we could make a dictionary containing both capitalized and un-capitalized words. That would save us the effort of going through and capitalizing all the proper names. The only question is would the resulting dictionary be too big? The solution is probably to propose a patch to make PocketSphinx ignore case in the dictionary, using capitalization as it is found in the corpus, not the dictionary.
 
 Don't worry if PocketSphinx learns bad grammar. It's not strictly necessary, but our corpus file, "lm/freespeech.ref.txt" may be manually corrected if it develops poor speech habits. Changes will apply next time anybody presses the "Learn" button.
 
