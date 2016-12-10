@@ -6,22 +6,22 @@ FreeSpeech is a free and open-source (FOSS), cross-platform Python front-end for
 
 In addition to dictation, FreeSpeech provides dynamic language learning, voice commands, and keyboard emulation, so users can dictate into other apps, remote terminals, and virtual machines.
 
-Get FreeSpeech via git from [Github] (https://github.com/themanyone/freespeech-vr).
+Get FreeSpeech via git from [Github](https://github.com/themanyone/freespeech-vr).
 
 ## Installation
 
-Windows: Installation might work using [ossbuild] (https://code.google.com/p/ossbuild/) for gstreamer. Will update this once we get a windows machine to test it.
+Windows: Installation might work using [ossbuild](https://code.google.com/p/ossbuild/) for gstreamer. Will update this once we get a windows machine to test it.
 
 ## Linux/Cygwin
 The following packages should be installed through the package manager.
 
-* [Python3] (https://www.python.org/)
-* [python3-gobject] (https://wiki.gnome.org/Projects/PyGObject)
-* [python-xlib] (https://python-xlib.sourceforge.net/)
-* [python-simplejson] (https://undefined.org/python/#simplejson)
-* [gstreamer-1.0, including gstreamer-python] (https://gstreamer.freedesktop.org/)
-* [pocketsphinx and sphinxbase] (http://cmusphinx.sourceforge.net/)
-* [CMU-Cambridge Statistical Language Modeling Toolkit v2] (http://www.speech.cs.cmu.edu/SLM/CMU-Cam_Toolkit_v2.tar.gz) ([documentation] (http://www.speech.cs.cmu.edu/SLM/toolkit_documentation.html))
+* [Python3](https://www.python.org/)
+* [python3-gobject](https://wiki.gnome.org/Projects/PyGObject)
+* [python-xlib](https://python-xlib.sourceforge.net/)
+* [python-simplejson](https://undefined.org/python/#simplejson)
+* [gstreamer-1.0, including gstreamer-python](https://gstreamer.freedesktop.org/)
+* [pocketsphinx and sphinxbase](http://cmusphinx.sourceforge.net/)
+* [CMU-Cambridge Statistical Language Modeling Toolkit v2](http://www.speech.cs.cmu.edu/SLM/CMU-Cam_Toolkit_v2.tar.gz) ([documentation](http://www.speech.cs.cmu.edu/SLM/toolkit_documentation.html))
 
 Distro packages may not exist yet. Compile sphinxbase and pocketsphinx from source. Use ./configure --prefix=/usr/local --libdir=/usr/local/lib64 and set environment variable for gstreamer1:
 
@@ -72,7 +72,7 @@ pocketsphinx_continuous
 
 Say something. (It should print lots of spam while doing some (very basic) speech recognition). Don't stop until it recognizes some speech. Our software depends on a working pocketsphinx installation.
 
-Download [CMU-Cam_Toolkit_v2] (http://www.speech.cs.cmu.edu/SLM/CMU-Cam_Toolkit_v2.tar.gz) and unpack it. Read the instructions in the README and edit the Makefile. To summarize, most PC hardware is what they call "little-endian" and it requires this change: Edit `CMU-Cam_Toolkit_v2/src/Makefile` and remove the # sign in front of this line:
+Download [CMU-Cam_Toolkit_v2](http://www.speech.cs.cmu.edu/SLM/CMU-Cam_Toolkit_v2.tar.gz) and unpack it. Read the instructions in the README and edit the Makefile. To summarize, most PC hardware is what they call "little-endian" and it requires this change: Edit `CMU-Cam_Toolkit_v2/src/Makefile` and remove the # sign in front of this line:
 
 ```bash
 BYTESWAP_FLAG	= -DSLM_SWAP_BYTES
@@ -149,7 +149,7 @@ Trouble writing /home/*/.config/FreeSpeech/freespeech.idngram
 Trouble writing...
 ```
 
-It usually means nobody installed [CMU-Cambridge Statistical Language Modeling Toolkit v2] (http://www.speech.cs.cmu.edu/SLM/CMU-Cam_Toolkit_v2.tar.gz) or there is a problem with the tools themselves. Edit the Makefile and follow the instructions therein before running `make`. Manually copy the files in the bin directory somewhere in your `$PATH` like `/usr/local/bin` on Linux or `C:\windows\system32` on Windows.
+It usually means nobody installed [CMU-Cambridge Statistical Language Modeling Toolkit v2](http://www.speech.cs.cmu.edu/SLM/CMU-Cam_Toolkit_v2.tar.gz) or there is a problem with the tools themselves. Edit the Makefile and follow the instructions therein before running `make`. Manually copy the files in the bin directory somewhere in your `$PATH` like `/usr/local/bin` on Linux or `C:\windows\system32` on Windows.
 
 For some reason, the toolkit expects to be able to write to /usr/tmp. The `tmpfile()` function uses the P_tmpdir defined in `<stdio.h>`, but the Makefile installs everything under `/usr`. The quick-fix is to provide /usr/tmp for machines that don't have it.
 
@@ -159,7 +159,7 @@ sudo ln -s /tmp /usr/tmp
 
 ## Improving accuracy
 
-The biggest improvements in accuracy have been achieved by adjusting the microphone position. Open up the volume control app. On systems that use pulseaudio (Fedora) volume level and microphone selection may be found using pavucontrol. Try making a recording with [Audacity] (http://audacity.sourceforge.net) and checking the noise levels to make sure it sounds like intelligible speech when played back. Make sure freespeech is using the same mic levels in the volume controls recording tab.
+The biggest improvements in accuracy have been achieved by adjusting the microphone position. Open up the volume control app. On systems that use pulseaudio (Fedora) volume level and microphone selection may be found using pavucontrol. Try making a recording with [Audacity](http://audacity.sourceforge.net) and checking the noise levels to make sure it sounds like intelligible speech when played back. Make sure freespeech is using the same mic levels in the volume controls recording tab.
 
 Adapt PocketSphinx to a particular voice or accent for better accuracy.
 See http://cmusphinx.sourceforge.net/wiki/tutorialadapt
@@ -179,7 +179,7 @@ Now train the new grammar, by using the capatalized form in a few sentences and 
 
 Don't worry if PocketSphinx learns bad grammar. It's not strictly necessary, but our corpus file, "lm/freespeech.ref.txt" may be manually corrected if it develops poor speech habits. Changes will apply next time anybody presses the "Learn" button.
 
-The language model may be further [tweaked and improved] (http://www.speech.cs.cmu.edu/SLM/toolkit_documentation.html#evallm).
+The language model may be further [tweaked and improved](http://www.speech.cs.cmu.edu/SLM/toolkit_documentation.html#evallm).
 
 ## Dictionary
 
