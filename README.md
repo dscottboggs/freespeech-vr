@@ -18,7 +18,8 @@ The following packages may be installed through the package manager.
 * [pygtk2] (http://www.pygtk.org/)
 * [python-xlib] (http://python-xlib.sourceforge.net/)
 * [python-simplejson] (http://undefined.org/python/#simplejson)
-* [gstreamer-python gstreamer] (http://gstreamer.freedesktop.org/)
+* [gstreamer-python gstreamer gstreamer-plugins-base gstreamer-plugins-good] (http://gstreamer.freedesktop.org/)
+* [jackd libjack0 libjack-dev] (http://jackaudio.org/)
 * [pocketsphinx and sphinxbase] (http://cmusphinx.sourceforge.net/)
 * [CMU-Cambridge Statistical Language Modeling Toolkit v2] (http://www.speech.cs.cmu.edu/SLM/CMU-Cam_Toolkit_v2.tar.gz)
 * [documentation] (http://www.speech.cs.cmu.edu/SLM/toolkit_documentation.html)
@@ -32,24 +33,25 @@ pocketsphinx-libs pocketsphinx sphinxbase pocketsphinx-plugin \
 python-simplejson python-xlib pygtk2 git'
 ```
 
-## Ubuntu
+## Ubuntu/Debian
 
-Open a terminal and install the pocketsphinx repository: Todo: PPA is outdated. Search for a new ppa containing cmusphinx.
+Unfortunately, the repository for CMU Sphinx is out of date --
+the most recent update is from 2010, and it's authentication
+has since expired. Because of this, you have to manually
+download everything under 'pocketsphinx' and 'sphinxbase'
+for 'Lucid' from this link to a new folder.
+https://launchpad.net/~dhuggins/+archive/ubuntu/cmusphinx/+packages
 
-```bash
-sudo add-apt-repository ppa:dhuggins/cmusphinx
-```
-
-Enter password and press Enter twice.
-
-Get updates and install dependencies.
+Then, `cd` to the folder, and run the following commands:
 
 ```bash
 sudo apt-get update
 
-sudo apt-get python-xlib python-simplejson python-gtk2 python-gst0.1 \
-gstreamer0.10-pocketsphinx sphinx-common python-sphinxbase \
-python-pocketsphinx sphinxbase-utils git
+sudo dpkg -i ./*
+
+sudo apt-get install -f python-xlib python-simplejson python-gtk2 \
+python-gst0.1 git gstreamer-plugins-base gstreamer-plugins-good\
+jackd libjack0 libjack-dev
 ```
 
 If installation balks and says it can't find /media/cdrom the location may be different. The trick is to use the mount command from a terminal to discover where the cd is mounted and make it a link to /media/cdrom
