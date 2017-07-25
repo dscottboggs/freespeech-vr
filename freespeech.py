@@ -47,6 +47,11 @@ else:
         confdir  = os.path.join(confhome, appname)
     else:
         confdir = refdir
+if not os.access("/usr/tmp/",os.R_OK):
+	try:
+		 os.mkdirs("/usr/tmp")
+	except OSError as err:
+		print("You do not have a /usr/tmp folder or it is not writable")
 
 # reference files written by this application
 lang_ref= os.path.join(confdir, 'freespeech.ref.txt')
@@ -56,6 +61,8 @@ arpa    = os.path.join(confdir, 'freespeech.arpa')
 dmp     = os.path.join(confdir, 'freespeech.dmp')
 cmdtext = os.path.join(confdir, 'freespeech.cmd.txt')
 cmdjson = os.path.join(confdir, 'freespeech.cmd.json')
+
+
 
 class freespeech(object):
     """GStreamer/PocketSphinx Continuous Speech Recognition"""
