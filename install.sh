@@ -12,10 +12,10 @@
 #
 #
 
-python3_deps=(python-xlib python-simplejson python-gtk3 python3-pocketsphinx)
+python3_deps=(python-xlib python-simplejson python3-gi python-pocketsphinx)
 sphinx_deps=(python-sphinxbase sphinxbase-utils sphinx-common)
 gstreamer1_deps=(python3-gst-1.0 gstreamer1.0-pocketsphinx gstreamer1.0-plugins-base gstreamer1.0-plugins-good ) 
-python3_ALL_deps=($python3_deps $sphinx_deps $gstreamer1_deps)
+python3_ALL_deps=(${python3_deps[@]} ${sphinx_deps[@]} ${gstreamer1_deps[@]})
 
 # todo add Jessie and check Ubuntu flavors
 
@@ -57,9 +57,10 @@ fi
 echo "installing dependencies"
 
 if [ "$release" = "stretch" ]; then
-	sudo apt install $python_deps $pocketsphinx_deps $sphinxbase_deps $gstreamer1_deps
+	sudo apt install ${python3_ALL_deps[@]}
 fi
 
+sleep 3
 # todo python2 version setup on Jessie
 
 mkdir -p $XDG_CONFIG_HOME/FreeSpeech/Downloads/
@@ -67,7 +68,10 @@ cd $XDG_CONFIG_HOME/FreeSpeech/Downloads/
 
 git clone https://github.com/dscottboggs/freespeech-vr.git
 if [ "$release" = "stretch" ]; then
-	git checkout origin/python3
+	echo "setting up python3 version"
+	cd freespeech-vr/
+	git checkout python3
+	cd ..
 fi
 if [ ! -f "freespeech-vr/endian.c" ]; then
 	echo "error downloading git repo"
@@ -75,21 +79,27 @@ if [ ! -f "freespeech-vr/endian.c" ]; then
 fi
 
 gcc freespeech-vr/endian.c -o freespeech-vr/endian
+echo "Downloading and building CMU-Cambridge Statistical Language Modeling Toolkit v2"
+wget http://www.speech.cs.cmu.edu/SLM/CMU-Cam_Toolkit_v2.tar.gz
+tar xzvf CMU-Cam_Toolkit_v2.tar.gz
+cd $XDG_CONFIG_HOME/FreeSpeech/Downloads/CMU-Cam_Toolkit_v2/src
 # endian outputs an exit code based on the endian-ness of your system
-freespeech-vr/endian
+$XDG_CONFIG_HOME/FreeSpeech/Downloads/freespeech-vr/endian
 case $? in
 	1) echo "big endian install"
 	;;
 	2) echo "Little endian install"
-	cat CMU-Cam_Toolkit_v2/src/Makefile | \
-		sed 's|#BYTESWAP_FLAG|BYTESWAP_FLAG|' > \ 
-		CMU-Cam_Toolkit_v2/src/Makefile
+	cp Makefile Makefile.bak
+	pwd
+	cat Makefile | sed 's|#BYTESWAP_FLAG|BYTESWAP_FLAG|' > Makefile.tmp
+	mv Makefile.tmp Makefile
 	;;
 	*) echo "error in detecting endian-ness"
 	exit 1
 	;;
 esac
-cd CMU-Cam_Toolkit_v2/src
+# this is required for the CMU-Cambridge toolkit.
+sleep 5
 make
 cp ../bin/* /usr/bin/local/
 
