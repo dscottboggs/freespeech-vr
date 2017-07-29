@@ -12,7 +12,7 @@
 #
 #
 
-python3_deps=(python-xlib python-simplejson python3-gi python-pocketsphinx)
+python3_deps=(python3-xlib python-simplejson python3-gi python-pocketsphinx)
 sphinx_deps=(python-sphinxbase sphinxbase-utils sphinx-common)
 gstreamer1_deps=(python3-gst-1.0 gstreamer1.0-pocketsphinx gstreamer1.0-plugins-base gstreamer1.0-plugins-good ) 
 python3_ALL_deps=(${python3_deps[@]} ${sphinx_deps[@]} ${gstreamer1_deps[@]})
@@ -59,8 +59,6 @@ echo "installing dependencies"
 if [ "$release" = "stretch" ]; then
 	sudo apt install ${python3_ALL_deps[@]}
 fi
-
-sleep 3
 # todo python2 version setup on Jessie
 
 mkdir -p $XDG_CONFIG_HOME/FreeSpeech/Downloads/
@@ -98,10 +96,10 @@ case $? in
 	exit 1
 	;;
 esac
-# this is required for the CMU-Cambridge toolkit.
-sleep 5
+# this ^^ is required for the CMU-Cambridge toolkit.
 make
-cp ../bin/* /usr/bin/local/
+sudo cp ../bin/* /usr/local/bin/
+cp $XDG_CONFIG_HOME/FreeSpeech/Downloads/freespeech-vr/freespeech.desktop /usr/share/applications/
 
 echo "Installation should be complete. Please check the\
 output of the script for errors, test pocketsphinx\
