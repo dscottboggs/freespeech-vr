@@ -20,8 +20,8 @@ jack_deps=(jackd libjack0 libjack-dev)
 python3_ALL_deps=(${python3_deps[@]} ${sphinx_deps[@]} ${gstreamer1_deps[@]} ${jack_deps[@]})
 
 python2_deps=(python-xlib python-simplejson python-gtk2)
-gstreamer0_deps=(python-gst0.1 gstreamer-plugins-base gstreamer-plugins-good gstreamer0.1-pocketsphinx)
-python2_ALL_deps=(${python2_deps[@]} ${sphinx_deps[@]} ${gstreamer0_deps[@]} @{jack_deps[@]})
+gstreamer0_deps=(python-gst0.1 gstreamer0.10-plugins-base gstreamer0.10-plugins-good gstreamer0.10-pocketsphinx)
+python2_ALL_deps=(${python2_deps[@]} ${sphinx_deps[@]} ${gstreamer0_deps[@]} ${jack_deps[@]})
 
 # todo add Jessie and check Ubuntu flavors
 
@@ -110,6 +110,13 @@ case $? in
 esac
 # this is required for the CMU-Cambridge toolkit.
 make
+make install
+make
+# Not really sure why, but when you run make the first time, it doesn't
+#	populate the files. If you run make install, it tries to copy the 
+#	nonexistent files, then if you run make again the files show up.
+# Admittedly, this is a total hack and someone who knows more about
+#	compiling C projects than me should fix this part. 
 cp ../bin/* /usr/bin/local/
 
 if [ $? -eq 0 ]; then
