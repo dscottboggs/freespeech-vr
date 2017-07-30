@@ -51,6 +51,16 @@ toolkit_dependencies = "text2wfreq", "wfreq2vocab", "text2wngram", "text2idngram
 if 'XDG_CONFIG_HOME' in os.environ:
 	confhome = os.environ['XDG_CONFIG_HOME']
 	confdir  = os.path.join(confhome, appname)
+	if (os.access(os.path.join(confdir,"Downloads"),os.R_OK):
+		# installed with the script, git repo is available in .config/FreeSpeech/Downloads/freespeech-vr
+		refdir = os.path.join(confdir,"Downloads","freespeech-vr")
+		# this gives us the added advantage of not needing to rely on the script being run 
+		# from the folder cloned from git. For example, if one links the script to somewhere
+		# in their $PATH, or uses a .desktop file to launch it from the launcher, the refdir
+		# would be incorrect, and we need to set it.
+		# 		Note that this means that we will need to explicitly place
+		# the git repo for a Windows machine, and check for it here like this
+		# or it won't work!
 else:
 	if 'HOME' in os.environ:
 		confhome = os.path.join(os.environ['HOME'],".config")
@@ -70,12 +80,12 @@ ref_files={
 }
 
 def prereqs():
-	for f in ref_files:
-		if not os.access(ref_files[f],os.W_OK):
-			if os.access(ref_files[f],os.R_OK):
-				print("Fatal permission problem with ", os.access(read_file[f]))
-			else:
-				print("Fatal error - ",ref_files[f]," does not exist")
+	#for f in ref_files:
+		#if not os.access(ref_files[f],os.W_OK):
+			#if os.access(ref_files[f],os.R_OK):
+				#print("Fatal permission problem with ", os.access(read_file[f]))
+			#else:
+				#print("Fatal error -",ref_files[f],"does not exist")
 	## Check to make sure dependencies are present.
 	#establish path - this creates a list of possible paths, [:-1] removes the newline
 	paths = subprocess.check_output("echo $PATH",shell=True).decode().split(':')[:-1]
@@ -89,7 +99,7 @@ def prereqs():
 			unmet_dependencies.append(dependency)
 	if len(unmet_dependencies) > 0:
 		for dep in unmet_dependencies:
-			print("Unmet dependency! You need to install",dep,"to use",appname,sep=' ')
+			print("Unmet dependency! You need to install",dep,"to use",appname)
 		exit(ERROR)
 	
 	# Check for /usr/tmp, a library requires it.
@@ -168,7 +178,7 @@ class freespeech(object):
 				shutil.copy('custom.dic', ref_files["dic"])
 		except OSError as err:
 			errno,strerror=err.args
-			print(errno,strerror,sep=": ")
+			print("in __init__ -- " + str(errno),strerror,sep=": ")
 			exit(ERROR)
 			
 		# initialize components
@@ -394,7 +404,9 @@ If new commands don't work click the learn button to train them.")
 		# asr.set_property('lm', '/usr/share/pocketsphinx/model/lm/en_US/wsj0vp.5000.DMP')
 		# but it does not contain editing commands, so we make our own
 		if not os.access(ref_files["dmp"], os.W_OK): # create if not exists
-				self.learn_new_words(None)
+			self.learn_new_words(None)
+		elif os.path.getsize(ref_files["dmp"]) < 1:	# populate if empty
+			self.learn_new_words(None)
 		asr.set_property('lm', ref_files["dmp"])
 		
 		# Adapt pocketsphinx to your voice for better accuracy.
@@ -439,21 +451,31 @@ If new commands don't work click the learn button to train them.")
 		
 		# compile a vocabulary
 		# http://www.speech.cs.cmu.edu/SLM/toolkit_documentation.html#text2wfreq
-		if subprocess.call(catcmd + (ref_files["cmdtext"] + ' ')*4 + ref_files["lang_ref"] + '|text2wfreq -verbosity 2' \
-		+ ' |wfreq2vocab -top 20000 -records 100000 > ' + ref_files["vocab"], shell=True):
-			self.err('Trouble writing ' + ref_files["vocab"])
+		print("Compiling vocabulary and saving to file.")
+		try:
+			subprocess.check_call(catcmd + (ref_files["cmdtext"] + ' ')*4 + ref_files["lang_ref"] + '|text2wfreq -verbosity 2 |wfreq2vocab -top 20000 -records 100000 > ' + ref_files["vocab"], shell=True)
+		except subprocess.CalledProcessError as e:
+			num,msg = e.args
+			self.err('Trouble writing ' + ref_files["vocab"] + ": " + msg, FATAL)
 		# update the idngram\
 		# http://www.speech.cs.cmu.edu/SLM/toolkit_documentation.html#text2idngram
-		if subprocess.call('text2idngram -vocab ' + ref_files["vocab"] + \
-			' -n 3 < ' + ref_files["lang_ref"] + ' > ' + ref_files["idngram"], shell=True):
-			self.err('Trouble writing ' + ref_files["idngram"])
+		print("Updating idngram based on the new vocabulary")
+		try:
+			subprocess.check_call('text2idngram -vocab ' + ref_files["vocab"] + ' -n 3 < ' + ref_files["lang_ref"] + ' > ' + ref_files["idngram"], shell=True)
+		except subprocess.CalledProcessError as e:
+			num,msg = e.args
+			self.err('Trouble writing ' + ref_files["idngram"] + ": " + msg, FATAL)
 		
 		# (re)build arpa language model
 		# http://drupal.cs.grinnell.edu/~stone/courses/computational-linguistics/ngram-lab.html
-		if subprocess.call('idngram2lm -idngram -n 3 -verbosity 2 ' + ref_files["idngram"] + \
+		print("Rebuilding arpa language model")
+		try:
+			subprocess.check_call('idngram2lm -idngram -n 3 -verbosity 2 ' + ref_files["idngram"] + \
 			' -vocab ' + ref_files["vocab"] + ' -arpa ' + ref_files["arpa"] + ' -vocab_type 1' \
-			' -good_turing', shell=True):
-			self.err('Trouble writing ' + ref_files["arpa"])
+			' -good_turing', shell=True)
+		except subprocess.CalledProcessError as e:
+			num,msg = e.args
+			self.err('Trouble writing ' + ref_files["arpa"] + ": " + msg)
 
 		# convert to dmp
 		if subprocess.call('sphinx_lm_convert -i ' + ref_files["arpa"] + \
