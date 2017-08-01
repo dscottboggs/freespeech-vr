@@ -35,10 +35,14 @@ from send_key import *
 """ global variables """
 appname = 'FreeSpeech'
 refdir = 'lm'
-SUCCESSFUL,ERROR,SUBPROCESS_FAILURE = 0,1,2
+SUCCESSFULLY,ERROR,SUBPROCESS_FAILURE = 0,1,2
 LOW,NORMAL,HIGH,FATAL = 0,1,2,3
 toolkit_dependencies = "text2wfreq", "wfreq2vocab", "text2wngram", "text2idngram", "ngram2mgram", "wngram2idngram", "idngram2stats", "mergeidngram", "idngram2lm", "binlm2arpa", "evallm","interpolate"
-
+jackPromptString = '''\
+JACK Audio Connection Kit is not running.
+Would you like to start QJackCtl to set up the
+audio? You can also press "no" to continue,
+or cancel to cancel starting FreeSpeech.'''
 # hmmm, where to put files? How about XDG_CONFIG_HOME?
 # This will work on most Linux
 if 'XDG_CONFIG_HOME' in os.environ:
@@ -92,23 +96,26 @@ def prereqs():
 		except OSError:
 			print("You do not have a /usr/tmp folder or it is not writable. Attempts to resolve this have failed.")
 			exit(SUBPROCESS_FAILURE)
-	
+	pid=-1
+	if (os.system=="Windows"):
+		getPidCmd="pslist "
+	else:
+		getPidCmd="pidof "
 	# Check for jack
-	ps_aux_grep_jack = subprocess.check_output("ps aux | grep jack",shell=True,executable='/bin/bash').decode()
-	if "/bin/jackd " not in ps_aux_grep_jack:
-		print (ps_aux_grep_jack)
-		exit(ERROR)
-		audioPrompt = Gtk.Dialog("JACK not running", 0,
+	try:	# we could do os.kill, which is the proper way to check if something's running.
+			# but to do that you'd need the pid anyway, so try this why not
+		pid = subprocess.check_output(getPidCmd+"jackd",shell=True)
+	except subprocess.CalledProcessError:
+		print str(pid)
+		audioPrompt = gtk.Dialog("JACK not running",
+			None,
 			gtk.DIALOG_MODAL,
 			( gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
 				gtk.STOCK_NO, gtk.RESPONSE_NO,
 				gtk.STOCK_YES, gtk.RESPONSE_YES,))
-		audioPromptLabel = Gtk.Label(dedent('''\
-			JACK Audio Connection Kit is not running.
-			Would you like to start QJackCtl to set up the
-			audio? You can also press "no" to continue,
-			or cancel to cancel starting FreeSpeech.'''))
+		audioPromptLabel = gtk.Label(jackPromptString)
 		audioPrompt.vbox.pack_start(audioPromptLabel)
+		audioPromptLabel.show()
 		response = audioPrompt.run()
 		if response == gtk.RESPONSE_CANCEL:
 			exit(SUCCESSFULLY)
@@ -123,17 +130,26 @@ def prereqs():
 			 jackd is running
 			"""
 			try:
-				subprocess.call("qjackctl")
+				subprocess.call("qjackctl &",shell=True)
 			except OSError:
-				noQJackCtlDialog = Gtk.Dialog("QJackCtl is not installed!",
-					0,
+				noQJackCtlDialog = gtk.Dialog("QJackCtl is not installed!",
+					None,
 					gtk.DIALOG_MODAL,
 					( gtk.STOCK_OK, gtk.RESPONSE_OK))
-				noQJackCtlDialog.vbox.pack_start(Gtk.Label("Please install QJackCtl or start jackd with the proper values."))
+				noQJackCtlDialog.vbox.pack_start(gtk.Label("Please install QJackCtl or start jackd with the proper values."))
 				noQJackCtlDialog.run()
 				exit(SUBPROCESS_FAILURE)
-			while ("/usr/bin/jackd" not in subprocess.check_output( "ps aux | grep jack", shell=True, executable='/bin/bash' )):
-				time.sleep(1)
+			running=False
+			while not running:
+				try:
+					pid = subprocess.check_output(getPidCmd+"jackd",shell=True)
+					print(pid)
+					if pid is not -1:
+						print "jackd running at process " + str(pid)
+						running=True
+				except subprocess.CalledProcessError:
+					time.sleep(1)
+					
 			return()
 		else:
 			print("init_prereqs(): Invalid response from audioPrompt")
