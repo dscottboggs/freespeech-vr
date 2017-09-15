@@ -35,7 +35,14 @@ from send_key import *
 """ global variables """
 appname = 'FreeSpeech'
 refdir = 'lm'
-
+SUCCESSFULLY,ERROR,SUBPROCESS_FAILURE = 0,1,2
+LOW,NORMAL,HIGH,FATAL = 0,1,2,3
+toolkit_dependencies = "text2wfreq", "wfreq2vocab", "text2wngram", "text2idngram", "ngram2mgram", "wngram2idngram", "idngram2stats", "mergeidngram", "idngram2lm", "binlm2arpa", "evallm","interpolate"
+jackPromptString = '''\
+JACK Audio Connection Kit is not running.
+Would you like to start QJackCtl to set up the
+audio? You can also press "no" to continue,
+or cancel to cancel starting FreeSpeech.'''
 # hmmm, where to put files? How about XDG_CONFIG_HOME?
 # This will work on most Linux
 if 'XDG_CONFIG_HOME' in os.environ:
@@ -62,7 +69,91 @@ dmp     = os.path.join(confdir, 'freespeech.dmp')
 cmdtext = os.path.join(confdir, 'freespeech.cmd.txt')
 cmdjson = os.path.join(confdir, 'freespeech.cmd.json')
 
-
+def prereqs():
+	## Check to make sure dependencies are present.
+	#establish path - this creates a list of possible paths, [:-1] removes the newline
+	paths = subprocess.check_output("echo $PATH",shell=True).decode().split(':')[:-1]
+	unmet_dependencies = []
+	for dependency in toolkit_dependencies:
+		met = False
+		for path in paths:
+			if os.path.isfile(path + "/" + dependency):
+				met = True
+		if not met:
+			unmet_dependencies.append(dependency)
+	if len(unmet_dependencies) > 0:
+		for dep in unmet_dependencies:
+			print("Unmet dependency! You need to install",dep,"to use",appname)
+		exit(ERROR)	
+	# Check for /usr/tmp, a library requires it.
+	if not os.access("/usr/tmp/",os.W_OK):
+		try:
+			subprocess.call("sudo ln -s /tmp /usr/tmp",shell=True,executable='/bin/bash')
+			if os.access("/usr/tmp",os.W_OK):
+				print("successfully created /usr/tmp")
+			else:
+				print("Uncaught error creating /usr/tmp. Does it exist? Is it writable?")
+		except OSError:
+			print("You do not have a /usr/tmp folder or it is not writable. Attempts to resolve this have failed.")
+			exit(SUBPROCESS_FAILURE)
+	pid=-1
+	if (os.system=="Windows"):
+		getPidCmd="pslist "
+	else:
+		getPidCmd="pidof "
+	# Check for jack
+	try:	# we could do os.kill, which is the proper way to check if something's running.
+			# but to do that you'd need the pid anyway, so try this why not
+		pid = subprocess.check_output(getPidCmd+"jackd",shell=True)
+	except subprocess.CalledProcessError:
+		print str(pid)
+		audioPrompt = gtk.Dialog("JACK not running",
+			None,
+			gtk.DIALOG_MODAL,
+			( gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+				gtk.STOCK_NO, gtk.RESPONSE_NO,
+				gtk.STOCK_YES, gtk.RESPONSE_YES,))
+		audioPromptLabel = gtk.Label(jackPromptString)
+		audioPrompt.vbox.pack_start(audioPromptLabel)
+		audioPromptLabel.show()
+		response = audioPrompt.run()
+		if response == gtk.RESPONSE_CANCEL:
+			exit(SUCCESSFULLY)
+		elif response == gtk.RESPONSE_NO:
+			return()
+		elif response == gtk.RESPONSE_YES:
+			"""
+			 If you simply call "qjackctl", python will execute
+			 it then move on. We need to keep the main app from
+			 loading until jackd has started, so we are going to
+			 put it inside of a loop which checks to see if
+			 jackd is running
+			"""
+			try:
+				subprocess.call("qjackctl &",shell=True)
+			except OSError:
+				noQJackCtlDialog = gtk.Dialog("QJackCtl is not installed!",
+					None,
+					gtk.DIALOG_MODAL,
+					( gtk.STOCK_OK, gtk.RESPONSE_OK))
+				noQJackCtlDialog.vbox.pack_start(gtk.Label("Please install QJackCtl or start jackd with the proper values."))
+				noQJackCtlDialog.run()
+				exit(SUBPROCESS_FAILURE)
+			running=False
+			while not running:
+				try:
+					pid = subprocess.check_output(getPidCmd+"jackd",shell=True)
+					print(pid)
+					if pid is not -1:
+						print "jackd running at process " + str(pid)
+						running=True
+				except subprocess.CalledProcessError:
+					time.sleep(1)
+					
+			return()
+		else:
+			print("init_prereqs(): Invalid response from audioPrompt")
+			exit(ERROR)
 
 class freespeech(object):
     """GStreamer/PocketSphinx Continuous Speech Recognition"""
@@ -693,6 +784,7 @@ If new commands don't work click the learn button to train them.")
             search_back = iter.backward_search(argument, gtk.TEXT_SEARCH_TEXT_ONLY)
         return search_back
 
+prereqs()
 if __name__ == "__main__":
     app = freespeech()
     gtk.main()
