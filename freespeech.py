@@ -8,12 +8,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -35,6 +35,7 @@ import re
 import json
 from send_key import *
 import textwrap
+import messenger as Messenger
 
 """ global variables """
 appname = 'FreeSpeech'
@@ -77,7 +78,7 @@ ref_files={
     "dmp"        : os.path.join(confdir, 'freespeech.dmp'),
     "cmdtext"    : os.path.join(confdir, 'freespeech.cmd.txt'),
     "cmdjson"    : os.path.join(confdir, 'freespeech.cmd.json'),
-    "dic"        : os.path.join(confdir, 'custom.dic')    
+    "dic"        : os.path.join(confdir, 'custom.dic')
 }
 
 def prereqs():
@@ -89,20 +90,23 @@ def prereqs():
                 #print("Fatal error -",ref_files[f],"does not exist")
     ## Check to make sure dependencies are present.
     #establish path - this creates a list of possible paths, [:-1] removes the newline
-    paths = subprocess.check_output("echo $PATH",shell=True).decode().split(':')[:-1]
-    unmet_dependencies = []
-    for dependency in toolkit_dependencies:
-        met = False
-        for path in paths:
-            if os.path.isfile(path + "/" + dependency):
-                met = True
-        if not met:
-            unmet_dependencies.append(dependency)
-    if len(unmet_dependencies) > 0:
-        for dep in unmet_dependencies:
-            print("Unmet dependency! You need to install",dep,"to use",appname)
-        exit(ERROR)
-    
+
+    # this block should no longer be necessary as these binaries are installed
+    # automatically via the .deb package.
+    #paths = subprocess.check_output("echo $PATH",shell=True).decode().split(':')[:-1]
+    #unmet_dependencies = []
+    #for dependency in toolkit_dependencies:
+    #    met = False
+    #    for path in paths:
+    #        if os.path.isfile(path + "/" + dependency):
+    #            met = True
+    #    if not met:
+    #        unmet_dependencies.append(dependency)
+    #if len(unmet_dependencies) > 0:
+    #    for dep in unmet_dependencies:
+    #        print("Unmet dependency! You need to install",dep,"to use",appname)
+    #    exit(ERROR)
+
     # Check for /usr/tmp, a library requires it.
     if not os.access("/usr/tmp/",os.W_OK):
         try:
@@ -110,6 +114,9 @@ def prereqs():
             if os.access("/usr/tmp",os.W_OK):
                 print("successfully created /usr/tmp")
             else:
+				# I feel like I have a tendency to write code that will never be reached
+				# but I'd rather have it there in case something bizzarre happens
+				# so I can track it down.
                 print("Uncaught error creating /usr/tmp. Does it exist? Is it writable?")
         except OSError:
             print("You do not have a /usr/tmp folder or it is not writable. Attempts to resolve this have failed.")
@@ -118,20 +125,20 @@ def prereqs():
     ps_aux_grep_jack = subprocess.check_output("ps aux | grep jack",shell=True,executable='/bin/bash').decode()
     if "/bin/jackd " not in ps_aux_grep_jack:
         print (ps_aux_grep_jack)
-        audioPrompt = Gtk.Dialog("JACK not running", None,
-            gtk.DialogFlags.MODAL,
-            ( gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL,
+        audioPrompt= Messenger.Messenger()
+        audioPrompt.__init__(title="JACK not running", 
+			buttons=( gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL,
                 gtk.STOCK_NO, gtk.ResponseType.NO,
-                gtk.STOCK_YES, gtk.ResponseType.YES,))
-        audioPromptLabel = Gtk.Label( str(textwrap.dedent('''\
+                gtk.STOCK_YES, gtk.ResponseType.YES))
+        audioPromptLabel = str(textwrap.dedent('''\
             JACK Audio Connection Kit is not running.
             Would you like to start QJackCtl to set up the
             audio? You can also press "no" to continue,
-            or cancel to cancel starting FreeSpeech.''')))
-        audioPrompt.set_default_size(150,150)
-        audioPrompt.get_content_area().add(audioPromptLabel)
-        audioPromptLabel.show()
-        response = audioPrompt.run()
+            or cancel to cancel starting FreeSpeech.'''))
+        #audioPrompt.set_default_size(150,150)
+        #audioPromptLabel.show()
+        response = audioPrompt.run(errormsg=audioPromptLabel)
+        audioPrompt.destroy()
         if response == gtk.ResponseType.CANCEL:
             exit(SUCCESSFULLY)
         elif response == gtk.ResponseType.NO:
@@ -144,18 +151,21 @@ def prereqs():
              put it inside of a loop which checks to see if
              jackd is running
             """
+            counter=0
             try:
                 subprocess.call("qjackctl")
             except OSError:
-                noQJackCtlDialog = Gtk.Dialog("QJackCtl is not installed!",
-                    None,
-                    gtk.DialogFlags.MODAL,
-                    ( gtk.STOCK_OK, gtk.ResponseType.OK))
-                noQJackCtlDialog.vbox.pack_start(Gtk.Label("Please install QJackCtl or start jackd with the proper values."))
-                noQJackCtlDialog.run()
+                noQJackCtlDialog = Messenger.Messenger()
+                noQJackCtlDialog.__init__(title="QJackCtl is not installed!")
+                noQJackCtlDialog.show(errormsg="Please install QJackCtl or start jackd with the proper values.")
                 exit(SUBPROCESS_FAILURE)
             while ("/usr/bin/jackd" not in subprocess.check_output( "ps aux | grep jack", shell=True, executable='/bin/bash' )):
                 time.sleep(1)
+                if (counter < 20): # Wait 20 seconds for JACK to start
+                    counter+=1
+                else: # then throw an error 
+                    err=Messenger.__init__(title="Couldn't start JACK")
+                    err.show(severity=FATAL)
             return()
         else:
             print("init_prereqs(): Invalid response from audioPrompt: " + str(response))
@@ -182,23 +192,23 @@ class freespeech(object):
             errno,strerror=err.args
             print("in __init__ -- " + str(errno),strerror,sep=": ")
             exit(ERROR)
-            
+
         # initialize components
         self.editing = False
         self.ttext = ""
         self.init_gui()
-        Messenger.__init__(parent=self,
+        err=Messenger.__init__(parent=self)
         self.init_prefs()
         self.init_file_chooser()
         self.init_gst()
-        
+
     def init_gui(self):
         self.undo = [] # Say "Scratch that" or "Undo that"
         """Initialize the GUI components"""
         self.window = Gtk.Window()
         # Change to executable's dir
         if os.path.dirname(sys.argv[0]):
-            os.chdir(os.path.dirname(sys.argv[0]))     
+            os.chdir(os.path.dirname(sys.argv[0]))
         #self.icon = Gdk.pixbuf_new_from_file(appname+".png")
         self.window.connect("delete-event", Gtk.main_quit)
         self.window.set_default_size(200, 200)
@@ -331,7 +341,7 @@ If new commands don't work click the learn button to train them.")
                     f.write('<s> '+j+' </s>\n')
         except OSError as e:
             no,msg = e.args
-            self.err(self, no + ": " + msg + "\n...Occurred in write_prefs()", severity=FATAL)
+            err.show(errormsg= no + ": " + msg + "\n...Occurred in write_prefs()", severity=FATAL)
 
     def read_prefs(self):
         try:
@@ -340,7 +350,7 @@ If new commands don't work click the learn button to train them.")
                 self.commands=json.loads(f.read())
         except OSError as e:
             no,msg = e.args
-            self.err(self, no + ": " + msg + "\n...Occurred in write_prefs()", severity=FATAL)
+            err.show(errormsg = no + ": " + msg + "\n...Occurred in write_prefs()", severity=FATAL)
 
     def prefs_response(self, me, event):
         """ make prefs dialog non-modal by using response event
@@ -439,10 +449,10 @@ If new commands don't work click the learn button to train them.")
                         f.write(line + '\n')
         except FileNotFoundError as e:
             num,msg=e.args
-            self.err(self,num + ": " + msg, severity=FATAL)
+            err.show(errormsg= num + ": " + msg, severity= FATAL)
         except PermissionError as e:
             num,msg=e.args
-            self.err(self,num + ": " + msg,severity=FATAL)
+            err.show(errormsg= num + ": " + msg,severity=FATAL)
         
         # cat command
         if platform.system()=='Windows':
@@ -457,7 +467,7 @@ If new commands don't work click the learn button to train them.")
             subprocess.check_call(catcmd + (ref_files["cmdtext"] + ' ')*4 + ref_files["lang_ref"] + '|text2wfreq -verbosity 2 |wfreq2vocab -top 20000 -records 100000 > ' + ref_files["vocab"], shell=True)
         except subprocess.CalledProcessError as e:
             num,msg = e.args
-            self.err('Trouble writing ' + ref_files["vocab"] + ": " + msg, severity=FATAL)
+            err.show(errormsg= 'Trouble writing ' + ref_files["vocab"] + ": " + msg, severity=FATAL)
         # update the idngram\
         # http://www.speech.cs.cmu.edu/SLM/toolkit_documentation.html#text2idngram
         print("Updating idngram based on the new vocabulary")
@@ -465,7 +475,7 @@ If new commands don't work click the learn button to train them.")
             subprocess.check_call('text2idngram -vocab ' + ref_files["vocab"] + ' -n 3 < ' + ref_files["lang_ref"] + ' > ' + ref_files["idngram"], shell=True)
         except subprocess.CalledProcessError as e:
             num,msg = e.args
-            self.err('Trouble writing ' + ref_files["idngram"] + ": " + msg, severity=FATAL)
+            err.show(errormsg= 'Trouble writing ' + ref_files["idngram"] + ": " + msg, severity=FATAL)
         
         # (re)build arpa language model
         # http://drupal.cs.grinnell.edu/~stone/courses/computational-linguistics/ngram-lab.html
@@ -476,12 +486,12 @@ If new commands don't work click the learn button to train them.")
             ' -good_turing', shell=True)
         except subprocess.CalledProcessError as e:
             num,msg = e.args
-            self.err('Trouble writing ' + ref_files["arpa"] + ": " + msg)
+            err.show(errormsg='Trouble writing ' + ref_files["arpa"] + ": " + msg)
 
         # convert to dmp
         if subprocess.call('sphinx_lm_convert -i ' + ref_files["arpa"] + \
             ' -o ' + ref_files["dmp"] + ' -ofmt dmp', shell=True):
-            self.err('Trouble writing ' + ref_files["dmp"])
+            err.show(errormsg='Trouble writing ' + ref_files["dmp"])
         
         self.pipeline.set_state(Gst.State.NULL)
         self.init_gst()
@@ -852,50 +862,6 @@ If new commands don't work click the learn button to train them.")
             search_back = iter.backward_search(argument, Gtk.TextSearchFlags.TEXT_ONLY)
         return search_back
 
-class Messenger(Gtk.Dialog):
-	"""
-	Messenger objects hereafter are analogous to Gtk.Dialogs. All
-	methods which act upon dialogs should be moved to this class, and
-	called upon the object, rather than the methods being in the main
-	FreeSpeech class.
-	"""
-	title="Error"
-	parent=None
-	dialogFlags=Gtk.DialogFlags.MODAL
-	buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK)
-	def __init__(self, title="Error", parent=None, dialogFlags=Gtk.DialogFlags.MODAL, buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK)):
-		# Defaults are for error messages.
-		self.title=title
-		self.parent=parent
-		self.dialogFlags=dialogFlags
-		self.buttons=buttons
-		this=Gtk.Dialog.__init__(self.title, self.parent, self.dialogFlags, self.buttons)
-		this.set_default_size(400, 200)
-        this.label = Gtk.Label("Nice label")
-        this.vbox.pack_start(me.label, False, False, False)
-        this.label.show()
-        self=this
-	def show(severity=NORMAL,parent=self):
-		if severity is LOW:
-            print(errormsg) #simply pushes to stdout, rather than nagging with a popup.
-            # Actually, we should probably use something more like notify-send than
-            # stdout, as we are no longer writing with the asssumtion that FreeSpeech
-            # will be run from a terminal.
-        elif severity is HIGH:
-            #TODO
-            parent.errmsg.label.set_text(errormsg)
-            parent.errmsg.run()
-            parent.errmsg.hide()
-        elif severity is FATAL:
-            parent.errmsg.label.set_text(errormsg)
-            parent.errmsg.run()
-            parent.errmsg.hide()
-            exit(ERROR)
-        else:    # Normal severity
-            parent.errmsg.label.set_text(errormsg)
-            parent.errmsg.run()
-            parent.errmsg.hide()
-		
 prereqs()
 if __name__ == "__main__":
     app = freespeech()
