@@ -187,7 +187,7 @@ class freespeech(object):
         self.editing = False
         self.ttext = ""
         self.init_gui()
-        self.init_errmsg()
+        Messenger.__init__(parent=self,
         self.init_prefs()
         self.init_file_chooser()
         self.init_gst()
@@ -367,15 +367,6 @@ If new commands don't work click the learn button to train them.")
             del(self.commands[old_text])
             #~ print(old_text, new_text)
 
-    def init_errmsg(self):
-        me = self.errmsg = Gtk.Dialog("Error", None,
-            Gtk.DialogFlags.MODAL | Gtk.DialogFlags.DESTROY_WITH_PARENT,
-            (Gtk.STOCK_OK, Gtk.ResponseType.OK))
-        me.set_default_size(400, 200)
-        me.label = Gtk.Label("Nice label")
-        me.vbox.pack_start(me.label, False, False, False)
-        me.label.show()
-
     def element_message(self, bus, msg):
         """Receive element messages from the bus."""
         msgtype = msg.get_structure().get_name()
@@ -392,6 +383,14 @@ If new commands don't work click the learn button to train them.")
     def init_gst(self):
         """Initialize the speech components"""
         self.pipeline = Gst.parse_launch('autoaudiosrc ! ladspa-gate-1410-so-gate threshold=-23.0 decay=2.0 hold=2.0 attack=0.01 ! audioconvert ! audioresample ! pocketsphinx name=asr ! fakesink')
+        # this line ^^^ handles bringing the audio in from jackd, processing it for minor noise reduction
+        # and passing that to pocketsphinx. It requires Steve Harris' noise gate LADSPA plugin, which is 
+        # a part of the swh-plugins package. We should possibly package that in the .deb archive, rather
+        # than depending on the whole package, as we really only depend on one plugin. Alternatively, or
+        # perhaps addtionally, we could utilize other plugins from that library to further process the
+        # audio in order to get more reliable results from PocketSphinx (e.g.: adding a band-pass filter
+        # for the typical range of human speech, rather than listening on the whole range of microphone
+        # access).
         bus = self.pipeline.get_bus()
         bus.add_signal_watch()
         bus.connect('message::element', self.element_message)
@@ -853,6 +852,50 @@ If new commands don't work click the learn button to train them.")
             search_back = iter.backward_search(argument, Gtk.TextSearchFlags.TEXT_ONLY)
         return search_back
 
+class Messenger(Gtk.Dialog):
+	"""
+	Messenger objects hereafter are analogous to Gtk.Dialogs. All
+	methods which act upon dialogs should be moved to this class, and
+	called upon the object, rather than the methods being in the main
+	FreeSpeech class.
+	"""
+	title="Error"
+	parent=None
+	dialogFlags=Gtk.DialogFlags.MODAL
+	buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK)
+	def __init__(self, title="Error", parent=None, dialogFlags=Gtk.DialogFlags.MODAL, buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK)):
+		# Defaults are for error messages.
+		self.title=title
+		self.parent=parent
+		self.dialogFlags=dialogFlags
+		self.buttons=buttons
+		this=Gtk.Dialog.__init__(self.title, self.parent, self.dialogFlags, self.buttons)
+		this.set_default_size(400, 200)
+        this.label = Gtk.Label("Nice label")
+        this.vbox.pack_start(me.label, False, False, False)
+        this.label.show()
+        self=this
+	def show(severity=NORMAL,parent=self):
+		if severity is LOW:
+            print(errormsg) #simply pushes to stdout, rather than nagging with a popup.
+            # Actually, we should probably use something more like notify-send than
+            # stdout, as we are no longer writing with the asssumtion that FreeSpeech
+            # will be run from a terminal.
+        elif severity is HIGH:
+            #TODO
+            parent.errmsg.label.set_text(errormsg)
+            parent.errmsg.run()
+            parent.errmsg.hide()
+        elif severity is FATAL:
+            parent.errmsg.label.set_text(errormsg)
+            parent.errmsg.run()
+            parent.errmsg.hide()
+            exit(ERROR)
+        else:    # Normal severity
+            parent.errmsg.label.set_text(errormsg)
+            parent.errmsg.run()
+            parent.errmsg.hide()
+		
 prereqs()
 if __name__ == "__main__":
     app = freespeech()
