@@ -1,22 +1,74 @@
+/*
+    This file contains the default metacommands for managing FreeSpeech. It should be 
+    placed in /usr/share/freespeech/. It will be copied to /etc/freespeech/commands.json
+    if that file is empty.
+
+    original key-phrase to command dictionary:
+        
+        self.commands = {'file quit': 'Gtk.main_quit',
+            'file open': 'self.file_open',
+            'file save': 'self.file_save',
+            'file save as': 'self.file_save_as',
+            'show commands': 'self.show_commands',
+            'editor clear': 'self.clear_edits',
+            'clear edits': 'self.clear_edits',
+            'file close': 'self.clear_edits',
+            'delete': 'self.delete',
+            'select': 'self.select',
+            'send keys' : 'self.toggle_keys',
+            'insert': 'self.insert',
+            'go to the end': 'self.done_editing',
+            'done editing': 'self.done_editing',
+            'scratch that': 'self.scratch_that',
+            'back space': 'self.backspace',
+            'new paragraph':  'self.new_paragraph',
+        }
+
+*/
+
 [
     {
         "name":"quit_freespeech",
-        "listen_for":"[kill|quit|stop|shut down] free speech",
+        "listen_for":"[kill|quit|stop|shut down] [listening|free speech|mike|microphone]",
         "cmd_type": "meta",
-        "command": "Gtk.main_quit",
-        "description": "Stops FreeSpeech."
+        "command": "quit_freespeech",
+        "description": "Stops FreeSpeech.",
+        "training_phrases":
+        [
+            "kill free speech",
+            "quit free speech",
+            "stop free speech",
+            "shut down free speech",
+            "stop listening",
+            "shut down listening",
+            "kill microphone",
+            "kill mike"
+        ]
     },{
         "name":"open_file_for_editing",
-        "listen_for": "[open|open file|new file].*", // should include the text directly after the keyphrase. If this doesn't work or causes problems, revise.
+        "listen_for": "(open)+ (new)? ?(file)+( \\w*){0,5}", 
+        // ^^ should include up to five words directly after the keyphrase.
+        // If this doesn't work or causes problems, revise.
         "cmd_type": "meta",
         "command": "file_open",
-        "description": "Opens a file for editing, if exists. Otherwise, opens a new file with the given filename."
+        "description": "Opens a file for editing, if exists. Otherwise, opens a new file with the given filename.",
+        "training_phrases":
+        [
+            "open file",
+            "new file"
+        ]
     },{
         "name":"save_working_file",
-        "listen_for": "[[save].*|[that works]]",
+        "listen_for": "(save)( \\w*){0,3}|(that works)",
         "cmd_type": "meta",
         "command": "file_save",
-        "description": "Saves the file that is currently being worked on."
+        "description": "Saves the file that is currently being worked on.",
+        "training_phrases":
+        [
+            "save file",
+            "save it",
+            "that works"
+        ]
     },{
         "name":"save_working_file_as_new",
         "listen_for": "[branch and save|save as|save new.*]",
@@ -27,7 +79,19 @@
         "name":"show_commands_list",
         "listen_for":"[help|help me|list commands|show.*commands.*]",
         "cmd_type":"meta",
-        "command":"help",
+        "command":"freespeech_help",
         "description": "Parses all commands and displays them in a popup window"
+    },{
+        "name": "blank_editor",
+        "listen_for": "[clear edits|edit clear|close file]",
+        "cmd_type": "meta",
+        "command": "clear_edits",
+        "description": "Clears the text from the editor screen."
+    },{
+        "name": "delet_this",
+        "listen_for": "[botch|delete]",
+        "cmd_type": "meta",
+        "command":"delete_ur_life",
+        "description":"deletes stuff, i guess"
     }
 ]
