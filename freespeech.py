@@ -35,7 +35,7 @@ import re
 import json
 from send_key import *
 import textwrap
-import messenger as Messenger
+import messenger
 
 """ global variables """
 appname = 'FreeSpeech'
@@ -48,33 +48,17 @@ sphinx_deps    = "python-sphinxbase", "sphinxbase-utils"," sphinx-common"
 gstreamer1_deps = "python3-gst-1.0", "gstreamer1.0-pocketsphinx", "gstreamer1.0-plugins-base", "gstreamer1.0-plugins-good"
 dependencies = python3_deps + sphinx_deps + gstreamer1_deps
 toolkit_dependencies = "text2wfreq", "wfreq2vocab", "text2wngram", "text2idngram", "ngram2mgram", "wngram2idngram", "idngram2stats", "mergeidngram", "idngram2lm", "binlm2arpa", "evallm","interpolate"
-# hmmm, where to put files? How about XDG_CONFIG_HOME?
-# This will work on most Linux
-if 'XDG_CONFIG_HOME' in os.environ:
-    confhome = os.environ['XDG_CONFIG_HOME']
-    confdir  = os.path.join(confhome, appname)
-    if (os.access(os.path.join(confdir,"Downloads"),os.R_OK)):
-        # installed with the script, git repo is available in .config/FreeSpeech/Downloads/freespeech-vr
-        refdir = os.path.join(confdir,"Downloads","freespeech-vr")
-        # this gives us the added advantage of not needing to rely on the script being run 
-        # from the folder cloned from git. For example, if one links the script to somewhere
-        # in their $PATH, or uses a .desktop file to launch it from the launcher, the refdir
-        # would be incorrect, and we need to set it.
-        #         Note that this means that we will need to explicitly place
-        # the git repo for a Windows machine, and check for it here like this
-        # or it won't work!
-else:
-    if 'HOME' in os.environ:
-        confhome = os.path.join(os.environ['HOME'],".config")
-        confdir  = os.path.join(confhome, appname)
-    else:
-        confdir = refdir
-# reference files written by this application
+# hmmm, where to put files? How about we follow POSIX standards??
+refdir  = os.path.join("/", "usr", "share", "freespeech")
+confdir = os.path.join("/", "etc", "freespeech")
+# note refdir will have to be redefined if the system is Windows, as Windows doesn't have an /etc
+# perhaps the Windows dev could create an installer which creates a C:\Program Files\FreeSpeech\
+# and put it in there.
 ref_files={
-    "lang_ref"    : os.path.join(confdir, 'freespeech.ref.txt'),
-    "vocab"        : os.path.join(confdir, 'freespeech.vocab'),
+    "lang_ref"   : os.path.join(confdir, 'freespeech.ref.txt'),
+    "vocab"      : os.path.join(confdir, 'freespeech.vocab'),
     "idngram"    : os.path.join(confdir, 'freespeech.idngram'),
-    "arpa"        : os.path.join(confdir, 'freespeech.arpa'),
+    "arpa"       : os.path.join(confdir, 'freespeech.arpa'),
     "dmp"        : os.path.join(confdir, 'freespeech.dmp'),
     "cmdtext"    : os.path.join(confdir, 'freespeech.cmd.txt'),
     "cmdjson"    : os.path.join(confdir, 'freespeech.cmd.json'),
@@ -82,31 +66,6 @@ ref_files={
 }
 
 def prereqs():
-    #for f in ref_files:
-        #if not os.access(ref_files[f],os.W_OK):
-            #if os.access(ref_files[f],os.R_OK):
-                #print("Fatal permission problem with ", os.access(read_file[f]))
-            #else:
-                #print("Fatal error -",ref_files[f],"does not exist")
-    ## Check to make sure dependencies are present.
-    #establish path - this creates a list of possible paths, [:-1] removes the newline
-
-    # this block should no longer be necessary as these binaries are installed
-    # automatically via the .deb package.
-    #paths = subprocess.check_output("echo $PATH",shell=True).decode().split(':')[:-1]
-    #unmet_dependencies = []
-    #for dependency in toolkit_dependencies:
-    #    met = False
-    #    for path in paths:
-    #        if os.path.isfile(path + "/" + dependency):
-    #            met = True
-    #    if not met:
-    #        unmet_dependencies.append(dependency)
-    #if len(unmet_dependencies) > 0:
-    #    for dep in unmet_dependencies:
-    #        print("Unmet dependency! You need to install",dep,"to use",appname)
-    #    exit(ERROR)
-
     # Check for /usr/tmp, a library requires it.
     if not os.access("/usr/tmp/",os.W_OK):
         try:
@@ -124,8 +83,8 @@ def prereqs():
     # Check for jack
     ps_aux_grep_jack = subprocess.check_output("ps aux | grep jack",shell=True,executable='/bin/bash').decode()
     if "/bin/jackd " not in ps_aux_grep_jack:
-        print (ps_aux_grep_jack)
-        audioPrompt= Messenger.Messenger()
+        #print (ps_aux_grep_jack)
+        audioPrompt= messenger.Messenger()
         audioPrompt.__init__(title="JACK not running", 
 			buttons=( gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL,
                 gtk.STOCK_NO, gtk.ResponseType.NO,
@@ -135,8 +94,6 @@ def prereqs():
             Would you like to start QJackCtl to set up the
             audio? You can also press "no" to continue,
             or cancel to cancel starting FreeSpeech.'''))
-        #audioPrompt.set_default_size(150,150)
-        #audioPromptLabel.show()
         response = audioPrompt.run(errormsg=audioPromptLabel)
         audioPrompt.destroy()
         if response == gtk.ResponseType.CANCEL:
@@ -155,7 +112,7 @@ def prereqs():
             try:
                 subprocess.call("qjackctl")
             except OSError:
-                noQJackCtlDialog = Messenger.Messenger()
+                noQJackCtlDialog = messenger.Messenger()
                 noQJackCtlDialog.__init__(title="QJackCtl is not installed!")
                 noQJackCtlDialog.show(errormsg="Please install QJackCtl or start jackd with the proper values.")
                 exit(SUBPROCESS_FAILURE)
@@ -174,6 +131,8 @@ def prereqs():
 class freespeech(object):
     """GStreamer/PocketSphinx Continuous Speech Recognition"""
     def __init__(self):
+    	# Messenger is for showing dialogs
+    	err=Messenger.__init__(parent=self)
         """Initialize a freespeech object"""
         try:
             # place to store the currently open file name, if any
@@ -197,7 +156,6 @@ class freespeech(object):
         self.editing = False
         self.ttext = ""
         self.init_gui()
-        err=Messenger.__init__(parent=self)
         self.init_prefs()
         self.init_file_chooser()
         self.init_gst()
@@ -465,6 +423,8 @@ If new commands don't work click the learn button to train them.")
         print("Compiling vocabulary and saving to file.")
         try:
             subprocess.check_call(catcmd + (ref_files["cmdtext"] + ' ')*4 + ref_files["lang_ref"] + '|text2wfreq -verbosity 2 |wfreq2vocab -top 20000 -records 100000 > ' + ref_files["vocab"], shell=True)
+        # this line adds the cmdtext list 4 times to increase likelyhood over lang_ref.
+        # not sure if that's the best way to do things, but it seems to work.
         except subprocess.CalledProcessError as e:
             num,msg = e.args
             err.show(errormsg= 'Trouble writing ' + ref_files["vocab"] + ": " + msg, severity=FATAL)
