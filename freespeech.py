@@ -35,7 +35,7 @@ import re
 import json
 from send_key import *
 import textwrap
-import messenger
+import messenger, commands
 
 """ global variables """
 appname = 'FreeSpeech'
@@ -48,21 +48,30 @@ sphinx_deps    = "python-sphinxbase", "sphinxbase-utils"," sphinx-common"
 gstreamer1_deps = "python3-gst-1.0", "gstreamer1.0-pocketsphinx", "gstreamer1.0-plugins-base", "gstreamer1.0-plugins-good"
 dependencies = python3_deps + sphinx_deps + gstreamer1_deps
 toolkit_dependencies = "text2wfreq", "wfreq2vocab", "text2wngram", "text2idngram", "ngram2mgram", "wngram2idngram", "idngram2stats", "mergeidngram", "idngram2lm", "binlm2arpa", "evallm","interpolate"
-# hmmm, where to put files? How about we follow POSIX standards??
 refdir  = os.path.join("/", "usr", "share", "freespeech")
 confdir = os.path.join("/", "etc", "freespeech")
 # note refdir will have to be redefined if the system is Windows, as Windows doesn't have an /etc
 # perhaps the Windows dev could create an installer which creates a C:\Program Files\FreeSpeech\
 # and put it in there.
+
+# To be explicitly clear, reference files are files that are packaged
+# with FreeSpeech and contain default values,
 ref_files={
-    "lang_ref"   : os.path.join(confdir, 'freespeech.ref.txt'),
-    "vocab"      : os.path.join(confdir, 'freespeech.vocab'),
-    "idngram"    : os.path.join(confdir, 'freespeech.idngram'),
-    "arpa"       : os.path.join(confdir, 'freespeech.arpa'),
-    "dmp"        : os.path.join(confdir, 'freespeech.dmp'),
-    "cmdtext"    : os.path.join(confdir, 'freespeech.cmd.txt'),
-    "cmdjson"    : os.path.join(confdir, 'freespeech.cmd.json'),
-    "dic"        : os.path.join(confdir, 'custom.dic')
+	"cmdjson"	: os.path.join(refdir, 'default_commands.json')
+	"lang_ref"	: os.path.join(refdir, 'freespeech.ref.txt')
+	"dic"		: os.path.join(refdir, 'custom.dic')
+}
+# configuration files are files that are *generated* by FreeSpeech and
+# contain custom configurations.
+conf_files={
+    "lang_ref"	: os.path.join(confdir, 'freespeech.ref.txt'),
+    "vocab"     : os.path.join(confdir, 'freespeech.vocab'),
+    "idngram"   : os.path.join(confdir, 'freespeech.idngram'),
+    "arpa"      : os.path.join(confdir, 'freespeech.arpa'),
+    "dmp"       : os.path.join(confdir, 'freespeech.dmp'),
+    "cmdtext"   : os.path.join(confdir, 'freespeech.cmd.txt'),
+    "cmdjson"   : os.path.join(confdir, 'freespeech.cmd.json'),
+    "dic"       : os.path.join(confdir, 'custom.dic')
 }
 
 def prereqs():
@@ -77,6 +86,7 @@ def prereqs():
 				# but I'd rather have it there in case something bizzarre happens
 				# so I can track it down.
                 print("Uncaught error creating /usr/tmp. Does it exist? Is it writable?")
+                exit(ERROR)
         except OSError:
             print("You do not have a /usr/tmp folder or it is not writable. Attempts to resolve this have failed.")
             exit(SUBPROCESS_FAILURE)
@@ -141,16 +151,15 @@ class freespeech(object):
             if not os.access(confdir, os.R_OK):
                 os.mkdir(confdir)
             # copy lang_ref to confdir if not exists
-            if not os.access(ref_files["lang_ref"], os.R_OK):
-                lang_ref_orig = os.path.join(refdir, 'freespeech.ref.txt')
-                shutil.copy(lang_ref_orig, ref_files["lang_ref"])
+            if not os.access(conf_files["lang_ref"], os.R_OK):
+                shutil.copy(ref_files[lang_ref], conf_files["lang_ref"])
             # copy dictionary to confdir if not exists
-            if not os.access(ref_files["dic"], os.R_OK):
-                shutil.copy('custom.dic', ref_files["dic"])
+            if not os.access(conf_files["dic"], os.R_OK):
+                shutil.copy('custom.dic', conf_files["dic"])
         except OSError as err:
             errno,strerror=err.args
-            print("in __init__ -- " + str(errno),strerror,sep=": ")
-            exit(ERROR)
+            err.show("in __init__ -- " + str(errno) + ": " + strerror,
+            	severity=FATAL)
 
         # initialize components
         self.editing = False
@@ -235,50 +244,22 @@ class freespeech(object):
             pass
 
     def init_prefs(self):
-        """Initialize new GUI components"""
-        me = self.prefsdialog = Gtk.Dialog("Command Preferences", self.window,
-            Gtk.DialogFlags.DESTROY_WITH_PARENT,
-            (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-             Gtk.STOCK_OK, Gtk.ResponseType.OK))
-        me.set_default_size(200, 300)
-        if not os.access(ref_files["cmdjson"], os.R_OK):
-            #~ write some default commands to a file if it doesn't exist
-            self.init_commands()
-        elif os.path.getsize(ref_files["cmdjson"]) < 1:
+        if not os.access(conf_files["cmdjson"], os.R_OK):
+            shutil.copy(ref_files["cmdjson"],conf_files["cmdjson"])
+        elif os.path.getsize(conf_files["cmdjson"]) < 1:
             self.init_commands()
         else:
             self.read_prefs()
         
-        me.label = Gtk.Label( \
-"Double-click to change command wording.\n\
-If new commands don't work click the learn button to train them.")
-        me.vbox.pack_start(me.label, False, False, False)
-        me.checkbox=Gtk.CheckButton("Restore Defaults")
-        me.checkbox.show()
-        me.action_area.pack_start(me.checkbox, False, False, 0)
-        me.liststore=Gtk.ListStore(str, str)
-        me.liststore.set_sort_column_id(0, 0)
-        me.tree=Gtk.TreeView(me.liststore)
-        editable = Gtk.CellRendererText()
-        fixed = Gtk.CellRendererText()
-        editable.set_property('editable', True)
-        editable.connect('edited', self.edited_cb)
-        # me.connect("draw", self.prefs_expose)
-        me.liststore.clear()
-        for x,y in list(self.commands.items()):
-            me.liststore.append([x,eval(y).__doc__])
-        me.connect("response", self.prefs_response)
-        me.connect("delete_event", self.prefs_response)
-        column = Gtk.TreeViewColumn("Spoken command",editable,text=0)
-        column.set_fixed_width(200)
-        me.tree.append_column(column)
-        column = Gtk.TreeViewColumn("What it does",fixed,text=1)
-        me.tree.append_column(column)
-        me.vbox.pack_end(me.tree, False, False, 0)
-        me.label.show()
-        me.tree.show()
-        self.commands_old = self.commands
-        me.show_all()
+        """
+			I don't have a problem writing a GUI for changing keywords, in fact,
+			I think that for the application to get any mainstream use, it would
+			necessitate a GUI for editing that setting. However, the priority
+			for me right now is getting command/dictation working so that I can
+			edit code. To that end, I will be focusing on a voice interface for
+			that function rather than a graphical one (i.e. a python-based module
+			for generating JSON documents).
+        """
 
     def prefs_expose(self, me, event):
         """ callback when prefs window is shown """
@@ -291,12 +272,7 @@ If new commands don't work click the learn button to train them.")
     def write_prefs(self):
         """ write command list to file """
         try:
-            with codecs.open(ref_files["cmdjson"], encoding='utf-8', mode='w') as f:
-                f.write(json.dumps(self.commands))        
-            # write commands text, so we don't have to train each time
-            with codecs.open(ref_files["cmdtext"], encoding='utf-8', mode='w') as f:
-                for j in list(self.commands.keys()):
-                    f.write('<s> '+j+' </s>\n')
+           commands.
         except OSError as e:
             no,msg = e.args
             err.show(errormsg= no + ": " + msg + "\n...Occurred in write_prefs()", severity=FATAL)
@@ -304,7 +280,7 @@ If new commands don't work click the learn button to train them.")
     def read_prefs(self):
         try:
             """ read command list from file """
-            with codecs.open(ref_files["cmdjson"], encoding='utf-8', mode='r') as f:
+            with codecs.open(conf_files["cmdjson"], encoding='utf-8', mode='r') as f:
                 self.commands=json.loads(f.read())
         except OSError as e:
             no,msg = e.args
@@ -367,16 +343,16 @@ If new commands don't work click the learn button to train them.")
         asr = self.pipeline.get_by_name('asr')
 
         """Load custom dictionary and language model"""
-        asr.set_property('dict', ref_files["dic"])
+        asr.set_property('dict', conf_files["dic"])
 
         # The language model that came with pocketsphinx works OK...
         # asr.set_property('lm', '/usr/share/pocketsphinx/model/lm/en_US/wsj0vp.5000.DMP')
         # but it does not contain editing commands, so we make our own
-        if not os.access(ref_files["dmp"], os.W_OK): # create if not exists
+        if not os.access(conf_files["dmp"], os.W_OK): # create if not exists
             self.learn_new_words(None)
-        elif os.path.getsize(ref_files["dmp"]) < 1:    # populate if empty
+        elif os.path.getsize(conf_files["dmp"]) < 1:    # populate if empty
             self.learn_new_words(None)
-        asr.set_property('lm', ref_files["dmp"])
+        asr.set_property('lm', conf_files["dmp"])
 
         # Adapt pocketsphinx to your voice for better accuracy.
         # See http://cmusphinx.sourceforge.net/wiki/tutorialadapt_
@@ -401,7 +377,7 @@ If new commands don't work click the learn button to train them.")
         
         # append it to the language reference
         try:
-            with codecs.open(ref_files["lang_ref"], encoding='utf-8', mode='a+') as f:
+            with codecs.open(conf_files["lang_ref"], encoding='utf-8', mode='a+') as f:
                 for line in corpus:
                     if line:
                         f.write(line + '\n')
@@ -422,36 +398,36 @@ If new commands don't work click the learn button to train them.")
         # http://www.speech.cs.cmu.edu/SLM/toolkit_documentation.html#text2wfreq
         print("Compiling vocabulary and saving to file.")
         try:
-            subprocess.check_call(catcmd + (ref_files["cmdtext"] + ' ')*4 + ref_files["lang_ref"] + '|text2wfreq -verbosity 2 |wfreq2vocab -top 20000 -records 100000 > ' + ref_files["vocab"], shell=True)
+            subprocess.check_call(catcmd + (conf_files["cmdtext"] + ' ')*4 + conf_files["lang_ref"] + '|text2wfreq -verbosity 2 |wfreq2vocab -top 20000 -records 100000 > ' + conf_files["vocab"], shell=True)
         # this line adds the cmdtext list 4 times to increase likelyhood over lang_ref.
         # not sure if that's the best way to do things, but it seems to work.
         except subprocess.CalledProcessError as e:
             num,msg = e.args
-            err.show(errormsg= 'Trouble writing ' + ref_files["vocab"] + ": " + msg, severity=FATAL)
+            err.show(errormsg= 'Trouble writing ' + conf_files["vocab"] + ": " + msg, severity=FATAL)
         # update the idngram\
         # http://www.speech.cs.cmu.edu/SLM/toolkit_documentation.html#text2idngram
         print("Updating idngram based on the new vocabulary")
         try:
-            subprocess.check_call('text2idngram -vocab ' + ref_files["vocab"] + ' -n 3 < ' + ref_files["lang_ref"] + ' > ' + ref_files["idngram"], shell=True)
+            subprocess.check_call('text2idngram -vocab ' + conf_files["vocab"] + ' -n 3 < ' + conf_files["lang_ref"] + ' > ' + conf_files["idngram"], shell=True)
         except subprocess.CalledProcessError as e:
             num,msg = e.args
-            err.show(errormsg= 'Trouble writing ' + ref_files["idngram"] + ": " + msg, severity=FATAL)
+            err.show(errormsg= 'Trouble writing ' + conf_files["idngram"] + ": " + msg, severity=FATAL)
         
         # (re)build arpa language model
         # http://drupal.cs.grinnell.edu/~stone/courses/computational-linguistics/ngram-lab.html
         print("Rebuilding arpa language model")
         try:
-            subprocess.check_call('idngram2lm -idngram -n 3 -verbosity 2 ' + ref_files["idngram"] + \
-            ' -vocab ' + ref_files["vocab"] + ' -arpa ' + ref_files["arpa"] + ' -vocab_type 1' \
+            subprocess.check_call('idngram2lm -idngram -n 3 -verbosity 2 ' + conf_files["idngram"] + \
+            ' -vocab ' + conf_files["vocab"] + ' -arpa ' + conf_files["arpa"] + ' -vocab_type 1' \
             ' -good_turing', shell=True)
         except subprocess.CalledProcessError as e:
             num,msg = e.args
-            err.show(errormsg='Trouble writing ' + ref_files["arpa"] + ": " + msg)
+            err.show(errormsg='Trouble writing ' + conf_files["arpa"] + ": " + msg)
 
         # convert to dmp
-        if subprocess.call('sphinx_lm_convert -i ' + ref_files["arpa"] + \
-            ' -o ' + ref_files["dmp"] + ' -ofmt dmp', shell=True):
-            err.show(errormsg='Trouble writing ' + ref_files["dmp"])
+        if subprocess.call('sphinx_lm_convert -i ' + conf_files["arpa"] + \
+            ' -o ' + conf_files["dmp"] + ' -ofmt dmp', shell=True):
+            err.show(errormsg='Trouble writing ' + conf_files["dmp"])
         
         self.pipeline.set_state(Gst.State.NULL)
         self.init_gst()
