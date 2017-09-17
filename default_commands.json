@@ -1,0 +1,33 @@
+[
+    {
+        "name":"quit_freespeech",
+        "listen_for":"[kill|quit|stop|shut down] free speech",
+        "cmd_type": "meta",
+        "command": "Gtk.main_quit",
+        "description": "Stops FreeSpeech."
+    },{
+        "name":"open_file_for_editing",
+        "listen_for": "[open|open file|new file].*", // should include the text directly after the keyphrase. If this doesn't work or causes problems, revise.
+        "cmd_type": "meta",
+        "command": "file_open",
+        "description": "Opens a file for editing, if exists. Otherwise, opens a new file with the given filename."
+    },{
+        "name":"save_working_file",
+        "listen_for": "[[save].*|[that works]]",
+        "cmd_type": "meta",
+        "command": "file_save",
+        "description": "Saves the file that is currently being worked on."
+    },{
+        "name":"save_working_file_as_new",
+        "listen_for": "[branch and save|save as|save new.*]",
+        "cmd_type": "meta",
+        "command":"file_save_as",
+        "description":"Saves the file that is currently being worked on as a new file"
+    },{
+        "name":"show_commands_list",
+        "listen_for":"[help|help me|list commands|show.*commands.*]",
+        "cmd_type":"meta",
+        "command":"help",
+        "description": "Parses all commands and displays them in a popup window"
+    }
+]
