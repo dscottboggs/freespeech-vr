@@ -25,7 +25,8 @@
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
-from gi.repository import GObject, Gst, Gtk, Gdk
+from gi.repository import GObject, Gst, Gtk # Gdk is not used, but was
+# originally listed as imported. Perhaps it will be required at some point.
 GObject.threads_init()
 Gst.init(None)
 
@@ -35,7 +36,8 @@ import re
 import json
 from send_key import *
 import textwrap
-import messenger, commands
+import messenger
+import commands
 
 """ global variables """
 appname = 'FreeSpeech'
@@ -43,6 +45,8 @@ refdir = 'lm'
 gtk = Gtk
 SUCCESSFULLY, ERROR, SUBPROCESS_FAILURE = 0,1,2
 LOW, NORMAL, HIGH, FATAL = 0,1,2,3
+LOG, DEBUG, WARN = 0,3,4 # ERROR and SUBPROCESS_FAILURE were already set as exit codes.
+loglvl = [ "LOG", "ERROR", "SUBPROCESS_MESSAGE", "DEBUG", "WARN" ]
 python3_deps = "python3-xlib", "python-simplejson", "python3-gi", "python-pocketsphinx"
 sphinx_deps    = "python-sphinxbase", "sphinxbase-utils"," sphinx-common"
 gstreamer1_deps = "python3-gst-1.0", "gstreamer1.0-pocketsphinx", "gstreamer1.0-plugins-base", "gstreamer1.0-plugins-good"
@@ -57,14 +61,14 @@ confdir = os.path.join("/", "etc", "freespeech")
 # To be explicitly clear, reference files are files that are packaged
 # with FreeSpeech and contain default values,
 ref_files={
-	"cmdjson"	: os.path.join(refdir, 'default_commands.json')
-	"lang_ref"	: os.path.join(refdir, 'freespeech.ref.txt')
-	"dic"		: os.path.join(refdir, 'custom.dic')
+    "cmdjson"    : os.path.join(refdir, 'default_commands.json'),
+    "lang_ref"    : os.path.join(refdir, 'freespeech.ref.txt'),
+    "dic"        : os.path.join(refdir, 'custom.dic')
 }
 # configuration files are files that are *generated* by FreeSpeech and
 # contain custom configurations.
 conf_files={
-    "lang_ref"	: os.path.join(confdir, 'freespeech.ref.txt'),
+    "lang_ref"    : os.path.join(confdir, 'freespeech.ref.txt'),
     "vocab"     : os.path.join(confdir, 'freespeech.vocab'),
     "idngram"   : os.path.join(confdir, 'freespeech.idngram'),
     "arpa"      : os.path.join(confdir, 'freespeech.arpa'),
@@ -82,9 +86,9 @@ def prereqs():
             if os.access("/usr/tmp",os.W_OK):
                 print("successfully created /usr/tmp")
             else:
-				# I feel like I have a tendency to write code that will never be reached
-				# but I'd rather have it there in case something bizzarre happens
-				# so I can track it down.
+                # I feel like I have a tendency to write code that will never be reached
+                # but I'd rather have it there in case something bizzarre happens
+                # so I can track it down.
                 print("Uncaught error creating /usr/tmp. Does it exist? Is it writable?")
                 exit(ERROR)
         except OSError:
@@ -96,7 +100,7 @@ def prereqs():
         #print (ps_aux_grep_jack)
         audioPrompt= messenger.Messenger()
         audioPrompt.__init__(title="JACK not running", 
-			buttons=( gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL,
+            buttons=( gtk.STOCK_CANCEL, gtk.ResponseType.CANCEL,
                 gtk.STOCK_NO, gtk.ResponseType.NO,
                 gtk.STOCK_YES, gtk.ResponseType.YES))
         audioPromptLabel = str(textwrap.dedent('''\
@@ -141,8 +145,8 @@ def prereqs():
 class freespeech(object):
     """GStreamer/PocketSphinx Continuous Speech Recognition"""
     def __init__(self):
-    	# Messenger is for showing dialogs
-    	err=Messenger.__init__(parent=self)
+        # Messenger is for showing dialogs
+        err=Messenger.__init__(parent=self)
         """Initialize a freespeech object"""
         try:
             # place to store the currently open file name, if any
@@ -159,7 +163,7 @@ class freespeech(object):
         except OSError as err:
             errno,strerror=err.args
             err.show("in __init__ -- " + str(errno) + ": " + strerror,
-            	severity=FATAL)
+                severity=FATAL)
 
         # initialize components
         self.editing = False
@@ -168,6 +172,9 @@ class freespeech(object):
         self.init_commands()
         self.init_file_chooser()
         self.init_gst()
+
+    def log_msg(self, msg , msgtype=LOG):
+        print("FreeSpeech: ", loglvl[msgtype], " -- ", msg)
 
     def init_gui(self):
         self.undo = [] # Say "Scratch that" or "Undo that"
@@ -219,49 +226,60 @@ class freespeech(object):
              Gtk.STOCK_OK, Gtk.ResponseType.OK))
 
     def init_commands(self):
-        if not os.access(conf_files["cmdjson"], os.R_OK) or os.path.getsize(conf_files["cmdjson"]) < 1:
-            try:
-                shutil.copy(ref_files["cmdjson"],conf_files["cmdjson"])
-            except OSError as e:
-                no,msg = e.args
-                err.show(errormsg= no + ": " + msg + "\n...Occurred in init_commands()", severity=FATAL)
-        else:
-            self.read_prefs()
-        read_prefs()
+        me = self.prefsdialog = gtk.Dialog("Command Preferences", None,
+            gtk.DIALOG_DESTROY_WITH_PARENT,
+            (gtk.STOCK_CANCEL, gtk.ResponseType.REJECT,
+            gtk.STOCK_OK, gtk.ResponseType.ACCEPT))
+        self.cmds = commands.load_commands()
         cmd_text = []
-        for command in self.commands:
-            cmd_text.append(command["training_phrases"])
+        for command_name,command in self.cmds.iter():
             for phrase in command["training_phrases"]:
                 cmd_text.append("<s> " + phrase + " </s>") 
 #   apparently pocketsphinx parses phrases to add to the dictionary by reading
 #   them from XML <s> tags. 
         try:
-            with open(conf_files["cmdtext"]) as txtfile:
+            with open(conf_files["cmdtext"], encoding='utf-8', mode='w') as txtfile:
                 for text in cmd_text:
                     txtfile.write(text)
         except OSError as e:
             no,msg = e.args
             err.show(errormsg= no + ": " + msg + "\n...Occurred in init_commands()", severity=FATAL)
 
-        """
-			I don't have a problem writing a GUI for changing keywords, in fact,
-			I think that for the application to get any mainstream use, it would
-			necessitate a GUI for editing that setting. However, the priority
-			for me right now is getting command/dictation working so that I can
-			edit code. To that end, I will be focusing on a voice interface for
-			that function rather than a graphical one (i.e. a python-based module
-			for generating JSON documents -- although, that brings up the
-            possibilty that we should include a node.JS module type. If we go that
-            route, though, we might as well use Go for the REST interactions).
-        """
+        me.label = gtk.Label( \
+"Double-click to change command wording.\n\
+If new commands don't work click the learn button to train them.")
+        me.vbox.pack_start(me.label)
+        me.checkbox=gtk.CheckButton("Restore Defaults")
+        me.checkbox.show()
+        me.action_area.pack_start(me.checkbox)
+        me.liststore=gtk.ListStore(str, str)
+        me.liststore.set_sort_column_id(0, gtk.SORT_ASCENDING)
+        me.tree=gtk.TreeView(me.liststore)
+        editable = gtk.CellRendererText()
+        fixed = gtk.CellRendererText()
+        editable.set_property('editable', True)
+        editable.connect('edited', self.edited_cb)
+        me.connect("expose-event", self.prefs_expose)
+        me.connect("response", self.prefs_response)
+        me.connect("delete_event", self.prefs_response)
+        column = gtk.TreeViewColumn("Spoken command",editable,text=0)
+        me.tree.append_column(column)
+        column = gtk.TreeViewColumn("What it does",fixed,text=1)
+        me.tree.append_column(column)
+        me.vbox.pack_end(me.tree)
+        me.label.show()
+        me.tree.show()
+        self.commands_old = self.cmds
+        me.show_all()
 
     def prefs_expose(self, me, event):
         """ callback when prefs window is shown """
         # populate commands list with documentation
         me.liststore.clear()
-        for x,y in list(self.cmds.items()):
-            me.liststore.append([x,y])
-            print([x,y])
+        for command_name,command in self.cmds.iter():
+            for phrase in command["training_phrases"]:
+                me.liststore.append([command_name,phrase])
+                print(command_name,phrase,sep="  --  ")
 
     def read_prefs(self):
         try:
@@ -276,7 +294,12 @@ class freespeech(object):
         """ make prefs dialog non-modal by using response event
             instead of run() method, which waited for input """
         if me.checkbox.get_active():
-            self.init_commands()
+            # Copy current vocab to commands.json.bak if exists.
+            if (os.access(conf_files["commands.json"],os.R_OK())):
+                shutil.copy(conf_files["commands.json"],os.path.join(confdir,"commands.json.bak"))
+            # Note that this only creates one level of backup. If you go to the preferences menu and
+            # choose "restore defaults" twice, it will overwrite the backup with the defaults as well.
+            shutil.copy(ref_files["commands.json"],conf_files["commands.json"])
         else:
             if event!=Gtk.ResponseType.OK:
                 self.cmds = self.commands_old
@@ -296,6 +319,9 @@ class freespeech(object):
             self.cmds[new_text]=self.cmds[old_text]
             del(self.cmds[old_text])
             #~ print(old_text, new_text)
+        for command_name,command in self.cmds.iter():
+            if cellrenderertext == command_name:
+                command["training_phrases"].append(new_text)
 
 
     # Oh man, what a beautifully simple method. final_result(hypothesis,confidence).
@@ -309,7 +335,7 @@ class freespeech(object):
             return
 
         if msg.get_structure().get_value('final'):
-            self.final_result(msg.get_structure().get_value('hypothesis'), msg.get_structure().get_value('confidence'))
+            commands.search(heard_str = msg.get_structure().get_value('hypothesis'), confidence = msg.get_structure().get_value('confidence'))
             # self.pipeline.set_state(Gst.State.PAUSED)
             # self.button1.set_active(False)
         elif msg.get_structure().get_value('hypothesis'):
@@ -454,7 +480,7 @@ class freespeech(object):
             self.ttext = ""
         return True
         
-    def text_inserted(self, textbuf, iter, text, length):
+    def text_inserted(self, textbuf, itera, text, length):
         # start editing for 2 seconds
         if not self.editing:
             self.editing = True
@@ -467,8 +493,8 @@ class freespeech(object):
         index = 0
         insert = self.textbuf.get_iter_at_mark(self.textbuf.get_insert())
         prior = self.textbuf.get_iter_at_offset(insert.get_offset() - 2)
-        next = self.textbuf.get_iter_at_offset(insert.get_offset() + 1)
-        nextchar = self.textbuf.get_text(insert, next, False)
+        nxt = self.textbuf.get_iter_at_offset(insert.get_offset() + 1)
+        nextchar = self.textbuf.get_text(insert, nxt, False) #next is a python keyword
         lastchars = self.textbuf.get_text(prior, insert, False)
         words = txt.split()
         # remove the extra text to the right of the punctuation mark
@@ -476,7 +502,7 @@ class freespeech(object):
             if (index >= len(words)):
                 break
             word = words[index]
-            if (re.match("^\W\w", word)):
+            if (re.match(r"^\W\w", word)):
                 words[index] = word[0]
             index += 1
         txt = " ".join(words)
@@ -489,7 +515,7 @@ class freespeech(object):
         if (starting or re.match(".*[.?!:]",lastchars)) and len(txt) > 1:
             txt = txt[0].capitalize() + txt[1:]
         # add space to beginning if necessary
-        if txt and re.match("[^.?!:,\-\"';^@]",txt[0]) and len(lastchars) and lastchars[-1] != " " and not starting:
+        if txt and re.match(r"[^.?!:,\-\"';^@]",txt[0]) and len(lastchars) and lastchars[-1] != " " and not starting:
             txt = " " + txt
         # add space to end if necessary
         # abort if text selected
@@ -567,7 +593,7 @@ class freespeech(object):
             if not re.match(r".*\w.*", tex):
                 try:
                     corpus.remove(ind)
-                except:
+                except:     # Except what?
                     pass
                 continue
             # lower case maybe
@@ -599,47 +625,35 @@ class freespeech(object):
         # Fix punctuation
         hyp = self.collapse_punctuation(hyp, \
         self.bounds[1].starts_line())
-
         # handle commands
-        for cmd in cmds:
-    #   iterates through the entire list of commands
-            if(cmd.fullmatch(re.compile(cmd["listen_for"]),hypothesis.strip().lower())):
-        #   if the "listen_for" field's regex matches with the hypothesis,
+        for command_name,command in self.cmds.iter():
+        # iterates through the entire list of commands
+            if(command.fullmatch(re.compile(cmd["listen_for"]),hypothesis.strip().lower())):
+            # if the "listen_for" field's regex matches with the hypothesis,
                 commands.execute(cmd_type=cmd["cmd_type"],command=cmd["command"])
-            #   passes the value and type of command to commands.py
-        
+                # passes the value and type of command to commands.py
         ins = self.textbuf.get_insert()
-        iter = self.textbuf.get_iter_at_mark(ins)
+        itera = self.textbuf.get_iter_at_mark(ins) # iter is a python keyword
         # @ Henry Kroll WTF does this do?
-        self.text.scroll_to_iter(iter, 0, False, 0.5, 0.5)
+        self.text.scroll_to_iter(itera, 0, False, 0.5, 0.5)
         self.textbuf.end_user_action()
 
     """Process spoken commands"""
     def err(self, errormsg, severity=NORMAL):
         if severity is LOW:
-            print(errormsg)        
-        elif severity is HIGH:
-            #TODO
-            self.errmsg.label.set_text(errormsg)
-            self.errmsg.run()
-            self.errmsg.hide()
+            log_msg(msgtype=ERROR, msg=errormsg)        
+        # level HIGH is redundant and never used. Removed.
         elif severity is FATAL:
+            log_msg(msgtype=ERROR, msg=errormsg)
             self.errmsg.label.set_text(errormsg)
             self.errmsg.run()
             self.errmsg.hide()
             exit(ERROR)
         else:    # Normal severity
+            log_msg(msgtype=ERROR, msg=errormsg)
             self.errmsg.label.set_text(errormsg)
             self.errmsg.run()
             self.errmsg.hide()
-        
-    def show_commands(self, argument=None):
-        """ show these command preferences """
-        me=self.prefsdialog
-        self.commands_old = self.cmds
-        me.show_all()
-        me.present()
-        return True # command completed successfully!
     def clear_edits(self):
         """ close file and start over without saving """
         self.textbuf.set_text('')
@@ -692,8 +706,7 @@ class freespeech(object):
         return True # command completed successfully!
     def insert(self,argument=None):
         """ insert after [text] """      
-        #~ return True # command completed successfully!
-        arg = re.match('\w+(.*)', argument).group(1)
+        arg = re.match(r'\w+(.*)', argument).group(1)
         search_back = self.searchback(self.bounds[1], arg)
         if None == search_back:
             return True
@@ -732,28 +745,16 @@ class freespeech(object):
             send_string("\n")
             display.sync()
         return True # command completed successfully!
-    def file_save(self):
-        """ save text buffer to disk """
-        if not self.open_filename:
-            response=self.file_chooser.run()
-            if response==Gtk.ResponseType.OK:
-                self.open_filename=self.file_chooser.get_filename()
-            self.file_chooser.hide()
-            self.window.set_title("FreeSpeech | "+ os.path.basename(self.open_filename))
-        if self.open_filename:
-            with codecs.open(self.open_filename, encoding='utf-8', mode='w') as f:
-                f.write(self.textbuf.get_text(self.bounds[0],self.bounds[1]))
-        return True # command completed successfully!
 
-    def searchback(self, iter, argument):
+    def searchback(self, itera, argument): # iter is a python keyword
         """helper function to search backwards in text buffer"""
-        search_back = iter.backward_search(argument, Gtk.TextSearchFlags.TEXT_ONLY)
+        search_back = itera.backward_search(argument, Gtk.TextSearchFlags.TEXT_ONLY)
         if None == search_back:
             argument = argument.capitalize()
-            search_back = iter.backward_search(argument, Gtk.TextSearchFlags.TEXT_ONLY)
+            search_back = itera.backward_search(argument, Gtk.TextSearchFlags.TEXT_ONLY)
         if None == search_back:
             argument = argument.strip()
-            search_back = iter.backward_search(argument, Gtk.TextSearchFlags.TEXT_ONLY)
+            search_back = itera.backward_search(argument, Gtk.TextSearchFlags.TEXT_ONLY)
         return search_back
 
 prereqs()

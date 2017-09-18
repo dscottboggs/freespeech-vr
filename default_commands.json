@@ -1,50 +1,58 @@
-/*
-    This file contains the default metacommands for managing FreeSpeech. It should be 
-    placed in /usr/share/freespeech/. It will be copied to /etc/freespeech/commands.json
-    if that file is empty.
 
-    original key-phrase to command dictionary:
+    // This file contains the default metacommands for managing FreeSpeech. It should be 
+    // placed in /usr/share/freespeech/. It will be copied to /etc/freespeech/commands.json
+    // if that file is empty.
+
+    // original key-phrase to command dictionary:
         
-        self.commands = {'file quit': 'Gtk.main_quit',
-            'file open': 'self.file_open',
-            'file save': 'self.file_save',
-            'file save as': 'self.file_save_as',
-            'show commands': 'self.show_commands',
-            'editor clear': 'self.clear_edits',
-            'clear edits': 'self.clear_edits',
-            'file close': 'self.clear_edits',
-            'delete': 'self.delete',
-            'select': 'self.select',
-            'send keys' : 'self.toggle_keys',
-            'insert': 'self.insert',
-            'go to the end': 'self.done_editing',
-            'done editing': 'self.done_editing',
-            'scratch that': 'self.scratch_that',
-            'back space': 'self.backspace',
-            'new paragraph':  'self.new_paragraph',
-        }
+    //     self.commands = {'file quit': 'Gtk.main_quit',
+    //         'file open': 'self.file_open',
+    //         'file save': 'self.file_save',
+    //         'file save as': 'self.file_save_as',
+    //         'show commands': 'self.show_commands',
+    //         'editor clear': 'self.clear_edits',
+    //         'clear edits': 'self.clear_edits',
+    //         'file close': 'self.clear_edits',
+    //         'delete': 'self.delete',
+    //         'select': 'self.select',
+    //         'send keys' : 'self.toggle_keys',
+    //         'insert': 'self.insert',
+    //         'go to the end': 'self.done_editing',
+    //         'done editing': 'self.done_editing',
+    //         'scratch that': 'self.scratch_that',
+    //         'back space': 'self.backspace',
+    //         'new paragraph':  'self.new_paragraph',
+    //     }
 
-    Please note that the "listen_for" field is a python-interpreted regular expression, which
-    requires backslash escapes for JSON, python, AND regex, resulting in a \* JSON statement 
-    (i.e \x) having to be typed as a sixfold-escaped backslash-escaped character (i.e. \\\\\\x).
-    This only applies to the "listen_for" field
-*/
+    // Please note that the "listen_for" field is a python-interpreted regular expression, which
+    // requires backslash escapes for JSON, python, AND regex, resulting in a \* JSON statement 
+    // (i.e \x) having to be typed as a sixfold-escaped backslash-escaped character (i.e. \\\\\\x).
+    // This only applies to the "listen_for" field
 
-[
-    {
-        "name": "type_text",
-        "listen_for": "[speak|print] \\\\\\w*",
+    // Note that the reason for the listen_for and training_phrases fields differing is because
+    // they are for different tasks. PocketSphinx accepts a list of n-grams to train it's model
+    // (in order to increase the likelihood that a particular phrase will be recognized, as opposed
+    // to an acoustic model), but that's not a good way to check for recognition. To match to a
+    // particular command, the final hypothesis must match the regex. training_phrases does not
+    // need to and shouldn't be all inclusive, but you should be very careful about not having
+    // two commands match the same regex.
+
+    // Please check all regex to assure intended functionality.
+
+
+{
+    "type_text": {
+        "listen_for": "(print|write|type)( \\\\\\w)*", // should be able to use the regex match object for the actual text
         "cmd_type": "PRINT",
         "description": "Simulates keystrokes for a string",
-        "command": "", // somehow put the text in
+        "command": "print_text",
         "training_phrases":
         [
             "speak"
         ]
-    }
-    {
-        "name":"quit_freespeech",
-        "listen_for":"[kill|quit|stop|shut down] [listening|free speech|mike|microphone]",
+    },
+    "quit_freespeech":{
+        "listen_for":"(kill|quit|stop|shut down)( \\\\\\w*){0,3} (listening|free speech|mike|microphone)",
         "cmd_type": "META",
         "command": "quit_freespeech",
         "description": "Stops FreeSpeech.",
@@ -57,10 +65,11 @@
             "stop listening",
             "shut down listening",
             "kill microphone",
-            "kill mike"
+            "kill mike",
+            "kill the mike"
         ]
-    },{
-        "name":"open_file_for_editing",
+    },
+    "open_file_for_editing":{
         "listen_for": "(open)+ (new)? ?(file)+( \\\\\\w*){0,5}", 
         // ^^ should include up to five words directly after the keyphrase.
         // If this doesn't work or causes problems, revise.
@@ -72,8 +81,8 @@
             "open file",
             "new file"
         ]
-    },{
-        "name":"save_working_file",
+    },
+    "save_working_file":{
         "listen_for": "(save)( \\\\\\w*){0,3}|(that works)",
         "cmd_type": "META",
         "command": "file_save",
@@ -84,29 +93,60 @@
             "save it",
             "that works"
         ]
-    },{
-        "name":"save_working_file_as_new",
-        "listen_for": "[branch and save|save as|save new.*]",
+    },
+    "save_working_file_as_new":{
+        "listen_for": "(branch and save|save as|save new)( \\\\\\w*){0,5}",
         "cmd_type": "META",
         "command":"file_save_as",
-        "description":"Saves the file that is currently being worked on as a new file"
-    },{
-        "name":"show_commands_list",
-        "listen_for":"[help|help me|list commands|show.*commands.*]",
+        "description":"Saves the file that is currently being worked on as a new file",
+        "training_phrases":
+        [
+            "branch and save",
+            "save as",
+            "save file as",
+            "save new",
+            "save new file",
+            "save as new file"
+        ]
+    },
+    "show_commands_list":{
+        "listen_for":"(freespeech)?(help|help me|list commands|show( \\\\\\w*){0,3} commands( \\\\\\w*){0,3})",
         "cmd_type":"META",
         "command":"freespeech_help",
-        "description": "Parses all commands and displays them in a popup window"
-    },{
-        "name": "blank_editor",
-        "listen_for": "[clear edits|edit clear|close file]",
+        "description": "Parses all commands and displays them in a popup window",
+        "training_phrases":
+        [
+            "help",
+            "help me",
+            "list commands",
+            "freespeech help",
+            "freespeech list commands",
+            "show freespeech commands",
+            "show all freespeech commands",
+            "show all of the commands"
+        ]
+    },
+    "blank_editor":{
+        "listen_for": "(clear edits|edit clear|close file)",
         "cmd_type": "META",
         "command": "clear_edits",
-        "description": "Clears the text from the editor screen."
-    },{
-        "name": "delet_this",
-        "listen_for": "[botch|delete]",
+        "description": "Clears the text from the editor screen.",
+        "training_phrases":
+        [
+            "clear edits",
+            "edit clear",
+            "close file"
+        ]
+    },
+    "delete":{
+        "listen_for": "(delete|dell let)(this)?",
         "cmd_type": "META",
-        "command":"delete_ur_life",
-        "description":"deletes stuff, i guess"
+        "command":"delete",
+        "description":"deletes stuff",
+        "training_phrases":
+        [
+            "delete",
+            "delete this"
+        ]
     }
-]
+}

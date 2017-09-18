@@ -1,36 +1,39 @@
 import re, json, subprocess, os, shutil, metacommmands
 from send_key import *
+from freespeech import conf_files, log_msg
 class commands():
-    cmd_list        = []
+    cmds            = {}
     quick_ref       = []
     confdir         = os.path.join("/", "etc", "freespeech")
     refdir          = os.path.join("/", "usr", "share", "freespeech")
     commands_json   = os.path.join(confdir,"commands.json")
     parent          = None
     training_phrases= []
+    cmd_types       = ["PYTHON","BASH","REST","SAY","PRINT","META"]
     def __init__(self,parent=None):
         cmd_list = load_commands()
+        metacommmands.__init__()
         self.parent=parent
 
     def new_command(self, name, listen_for, cmd_type, command, description, training_phrases):
         if name is None or listen_for is None or cmd_type is None or command is None or description is None or training_phrases.length() < 1 :
-            return "Incomplete command. Command not saved."
+            log_msg(msgtype=4, message="Incomplete command. Command not saved.")
+        elif cmd_type not in cmd_types:
+            log_msg(msgtype=4,message="Command type " + cmd_type + " is not valid.")
         else:
-            cmd_str = json.dumps(
-                {"Name":name,
+            cmds=load_commands()
+            cmds[name]={
                 "listen_for":listen_for,
-                # todo check valid cmd_type before this
-                "cmd_type":cmd_type,
-                "command":command,
-                "description":description,
-                "training_phrases":training_phrases})
-            with open('commands.json','w') as cmd_file:
-                cmd_list = load_commands()
-                cmd_list.append(cmd_str)
-                cmd_file.write(cmd_list)
+                "cmd_type": cmd_type,
+                "command": command,
+                "description": description,
+                "training_phrases": training_phrases
+            }
+            with open(conf_files["cmdjson"], encoding='utf-8', mode='r') as cmd_file:
+                cmd_file.write(json.dumps(cmds))
     def load_commands(self):
         try:
-            with open(commands_json,'r') as cmd_file:
+            with open(commands_json, encoding='utf-8', mode='r') as cmd_file:
                 if os.path.getsize(cmd_file) < 1:
                     shutil.copy(os.path.join(refdir,"default_commands.json"), os.path.join(confdir, "commands.json"))
                 # copies a default set of commands to the configuration directory from the reference
@@ -39,6 +42,7 @@ class commands():
         except OSError:
             try:
                 shutil.copy(os.path.join(refdir,"default_commands.json"), os.path.join(confdir,"commands.json"))
+                load_commands()
             except OSError:
                 parent.err.show(errormsg="Cannot create commands.json in /etc/freespeech", severity=parent.FATAL)
     def create_quicker_reference(self):
@@ -52,9 +56,9 @@ class commands():
             the algorithm) this will be faster but I'm open to replacing
             it with something that better optimizes the task.
         """
-        for cmd in cmd_list:
+        for cmd_name,cmd in cmd_list:
             self.quick_ref.append((cmd["listen_for"], cmd["Name"]))
-    def search(self,heard_str):
+    def search(self,heard_str,confidence):
         valid = False
         for c,d in quick_ref:
             if c.matches(heard_str):
@@ -94,14 +98,4 @@ class commands():
         pass
 
     def metacommand(command):
-        # If there's a better way to do this I'm open to it.
-        if (command == "quit_freespeech"):
-            parent.Gtk.main_quit()
-        elif (command == "file_open"):
-            metacommands.file_open()
-        elif (command == "file_save_as"):
-            metacommands.file_save_as()
-        elif (command == "file_save"):
-            parent.file_save()
-        elif (command == "freespeech_help"):
-            parent.show_commands()
+        eval("metacommands." + command + "()")
