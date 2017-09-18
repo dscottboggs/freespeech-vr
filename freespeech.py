@@ -165,7 +165,7 @@ class freespeech(object):
         self.editing = False
         self.ttext = ""
         self.init_gui()
-        self.init_prefs()
+        self.init_commands()
         self.init_file_chooser()
         self.init_gst()
 
@@ -217,40 +217,32 @@ class freespeech(object):
         parent=self.window, action=Gtk.FileChooserAction.OPEN,
         buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
              Gtk.STOCK_OK, Gtk.ResponseType.OK))
-    
-    def init_commands(self):
-        self.commands = {'file quit': 'Gtk.main_quit',
-            'file open': 'self.file_open',
-            'file save': 'self.file_save',
-            'file save as': 'self.file_save_as',
-            'show commands': 'self.show_commands',
-            'editor clear': 'self.clear_edits',
-            'clear edits': 'self.clear_edits',
-            'file close': 'self.clear_edits',
-            'delete': 'self.delete',
-            'select': 'self.select',
-            'send keys' : 'self.toggle_keys',
-            'insert': 'self.insert',
-            'go to the end': 'self.done_editing',
-            'done editing': 'self.done_editing',
-            'scratch that': 'self.scratch_that',
-            'back space': 'self.backspace',
-            'new paragraph':  'self.new_paragraph',
-        }
-        self.write_prefs()
-        try:
-            self.prefsdialog.checkbox.set_active(False)
-        except:
-            pass
 
-    def init_prefs(self):
-        if not os.access(conf_files["cmdjson"], os.R_OK):
-            shutil.copy(ref_files["cmdjson"],conf_files["cmdjson"])
-        elif os.path.getsize(conf_files["cmdjson"]) < 1:
-            self.init_commands()
+    def init_commands(self):
+        if not os.access(conf_files["cmdjson"], os.R_OK) or os.path.getsize(conf_files["cmdjson"]) < 1:
+            try:
+                shutil.copy(ref_files["cmdjson"],conf_files["cmdjson"])
+            except OSError as e:
+                no,msg = e.args
+                err.show(errormsg= no + ": " + msg + "\n...Occurred in init_commands()", severity=FATAL)
         else:
             self.read_prefs()
-        
+        read_prefs()
+        cmd_text = []
+        for command in self.commands:
+            cmd_text.append(command["training_phrases"])
+            for phrase in command["training_phrases"]:
+                cmd_text.append("<s> " + phrase + " </s>") 
+#   apparently pocketsphinx parses phrases to add to the dictionary by reading
+#   them from XML <s> tags. 
+        try:
+            with open(conf_files["cmdtext"]) as txtfile:
+                for text in cmd_text:
+                    txtfile.write(text)
+        except OSError as e:
+            no,msg = e.args
+            err.show(errormsg= no + ": " + msg + "\n...Occurred in init_commands()", severity=FATAL)
+
         """
 			I don't have a problem writing a GUI for changing keywords, in fact,
 			I think that for the application to get any mainstream use, it would
@@ -258,33 +250,27 @@ class freespeech(object):
 			for me right now is getting command/dictation working so that I can
 			edit code. To that end, I will be focusing on a voice interface for
 			that function rather than a graphical one (i.e. a python-based module
-			for generating JSON documents).
+			for generating JSON documents -- although, that brings up the
+            possibilty that we should include a node.JS module type. If we go that
+            route, though, we might as well use Go for the REST interactions).
         """
 
     def prefs_expose(self, me, event):
         """ callback when prefs window is shown """
         # populate commands list with documentation
         me.liststore.clear()
-        for x,y in list(self.commands.items()):
+        for x,y in list(self.cmds.items()):
             me.liststore.append([x,y])
             print([x,y])
-        
-    def write_prefs(self):
-        """ write command list to file """
-        try:
-           commands.
-        except OSError as e:
-            no,msg = e.args
-            err.show(errormsg= no + ": " + msg + "\n...Occurred in write_prefs()", severity=FATAL)
 
     def read_prefs(self):
         try:
             """ read command list from file """
             with codecs.open(conf_files["cmdjson"], encoding='utf-8', mode='r') as f:
-                self.commands=json.loads(f.read())
+                self.cmds=json.loads(f.read())
         except OSError as e:
             no,msg = e.args
-            err.show(errormsg = no + ": " + msg + "\n...Occurred in write_prefs()", severity=FATAL)
+            err.show(errormsg = no + ": " + msg + "\n...Occurred in read_prefs()", severity=FATAL)
 
     def prefs_response(self, me, event):
         """ make prefs dialog non-modal by using response event
@@ -293,7 +279,7 @@ class freespeech(object):
             self.init_commands()
         else:
             if event!=Gtk.ResponseType.OK:
-                self.commands = self.commands_old
+                self.cmds = self.commands_old
             else:
                 self.write_prefs()
         me.hide()
@@ -305,12 +291,17 @@ class freespeech(object):
         liststore=self.prefsdialog.liststore
         treeiter = liststore.get_iter(path)
         old_text = liststore.get_value(treeiter,0)
-        if new_text not in self.commands:
+        if new_text not in self.cmds:
             liststore.set_value(treeiter,0,new_text)
-            self.commands[new_text]=self.commands[old_text]
-            del(self.commands[old_text])
+            self.cmds[new_text]=self.cmds[old_text]
+            del(self.cmds[old_text])
             #~ print(old_text, new_text)
 
+
+    # Oh man, what a beautifully simple method. final_result(hypothesis,confidence).
+    # perhaps the sphinx utility offers a way to return a list of hypotheses sorted
+    # by confidence for a simple "go back and fix that bit" method. We shall see,
+    # once functionality is established.
     def element_message(self, bus, msg):
         """Receive element messages from the bus."""
         msgtype = msg.get_structure().get_name()
@@ -598,7 +589,7 @@ class freespeech(object):
         """Show partial result on tooltip."""
         self.text.set_tooltip_text(hyp)
 
-    def final_result(self, hyp, uttid):
+    def final_result(self, hypothesis, confidence):
         """Insert the final result into the textbox."""
         # All this stuff appears as one single action
         self.textbuf.begin_user_action()
@@ -608,18 +599,18 @@ class freespeech(object):
         # Fix punctuation
         hyp = self.collapse_punctuation(hyp, \
         self.bounds[1].starts_line())
+
         # handle commands
-        if not self.do_command(hyp):
-            #self.undo.append(hyp)
-            self.textbuf.delete_selection(True, self.text.get_editable())
-            self.textbuf.insert_at_cursor(hyp)
-            # send keystrokes to the desktop?
-            if self.button1.get_active():
-                send_string(hyp)
-                display.sync()
-            print(hyp)
+        for cmd in cmds:
+    #   iterates through the entire list of commands
+            if(cmd.fullmatch(re.compile(cmd["listen_for"]),hypothesis.strip().lower())):
+        #   if the "listen_for" field's regex matches with the hypothesis,
+                commands.execute(cmd_type=cmd["cmd_type"],command=cmd["command"])
+            #   passes the value and type of command to commands.py
+        
         ins = self.textbuf.get_insert()
         iter = self.textbuf.get_iter_at_mark(ins)
+        # @ Henry Kroll WTF does this do?
         self.text.scroll_to_iter(iter, 0, False, 0.5, 0.5)
         self.textbuf.end_user_action()
 
@@ -645,7 +636,7 @@ class freespeech(object):
     def show_commands(self, argument=None):
         """ show these command preferences """
         me=self.prefsdialog
-        self.commands_old = self.commands
+        self.commands_old = self.cmds
         me.show_all()
         me.present()
         return True # command completed successfully!
@@ -741,16 +732,6 @@ class freespeech(object):
             send_string("\n")
             display.sync()
         return True # command completed successfully!
-    def file_open(self):
-        """ open file dialog """
-        response=self.file_chooser.run()
-        if response==Gtk.ResponseType.OK:
-            self.open_filename=self.file_chooser.get_filename()
-            with codecs.open(self.open_filename, encoding='utf-8', mode='r') as f:
-                self.textbuf.set_text(f.read())
-        self.file_chooser.hide()
-        self.window.set_title("FreeSpeech | "+ os.path.basename(self.open_filename))
-        return True # command completed successfully!
     def file_save(self):
         """ save text buffer to disk """
         if not self.open_filename:
@@ -763,29 +744,6 @@ class freespeech(object):
             with codecs.open(self.open_filename, encoding='utf-8', mode='w') as f:
                 f.write(self.textbuf.get_text(self.bounds[0],self.bounds[1]))
         return True # command completed successfully!
-    def file_save_as(self):
-        """ save under a different name """
-        self.open_filename=''
-        return self.file_save()
-
-    def do_command(self, hyp):
-        """decode spoken commands"""
-        h = hyp.strip()
-        h = h.lower()
-        # editable commands
-        commands=self.commands
-        # process commands with no arguments
-        if h in commands:
-            return eval(commands[h])()
-        elif h.find(' ')>0:
-            #~ reg = re.match(u'(\w+) (.*)', hyp)
-            #~ command = reg.group(1)
-            #~ argument = reg.group(2)
-            cmd = h.partition(' ')
-            if cmd[0] in commands:
-                return eval(commands[cmd[0]])(cmd[2])
-                
-        return False
 
     def searchback(self, iter, argument):
         """helper function to search backwards in text buffer"""

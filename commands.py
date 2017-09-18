@@ -1,4 +1,5 @@
-import re, json, subprocess, os, shutil
+import re, json, subprocess, os, shutil, metacommmands
+from send_key import *
 class commands():
     cmd_list        = []
     quick_ref       = []
@@ -11,7 +12,7 @@ class commands():
         cmd_list = load_commands()
         self.parent=parent
 
-    def new_command(name, listen_for, cmd_type, command, description, training_phrases):
+    def new_command(self, name, listen_for, cmd_type, command, description, training_phrases):
         if name is None or listen_for is None or cmd_type is None or command is None or description is None or training_phrases.length() < 1 :
             return "Incomplete command. Command not saved."
         else:
@@ -21,12 +22,13 @@ class commands():
                 # todo check valid cmd_type before this
                 "cmd_type":cmd_type,
                 "command":command,
-                "description":description})
+                "description":description,
+                "training_phrases":training_phrases})
             with open('commands.json','w') as cmd_file:
                 cmd_list = load_commands()
                 cmd_list.append(cmd_str)
                 cmd_file.write(cmd_list)
-    def load_commands():
+    def load_commands(self):
         try:
             with open(commands_json,'r') as cmd_file:
                 if os.path.getsize(cmd_file) < 1:
@@ -39,7 +41,7 @@ class commands():
                 shutil.copy(os.path.join(refdir,"default_commands.json"), os.path.join(confdir,"commands.json"))
             except OSError:
                 parent.err.show(errormsg="Cannot create commands.json in /etc/freespeech", severity=parent.FATAL)
-    def create_quicker_reference():
+    def create_quicker_reference(self):
         """
             This is SUPPOSED to speed things up a bit (considering 
             the task at hand this seems important, despite the inherent
@@ -51,8 +53,8 @@ class commands():
             it with something that better optimizes the task.
         """
         for cmd in cmd_list:
-            quick_ref.append((cmd["listen_for"], cmd["Name"]))
-    def search(heard_str):
+            self.quick_ref.append((cmd["listen_for"], cmd["Name"]))
+    def search(self,heard_str):
         valid = False
         for c,d in quick_ref:
             if c.matches(heard_str):
@@ -62,24 +64,26 @@ class commands():
         if valid=False:
             command_not_found()
 
-    def find_cmd(name):
+    def find_cmd(self, name):
         for cmd in cmd_list:
             if name=cmd["Name"]:
                 execute(cmd_type=cmd["cmd_type"],command=cmd["command"])
 
-    def execute(cmd_type, command):
+    def execute(self,cmd_type, command):
         if cmd_type is "PYTHON":
             exec(command)
         #elif cmd_type is "PYTHON2":
         #   idk how to do this. TODO, or fuck it?
         elif cmd_type is "BASH":
-            successful = subprocess.check_call(command,shell=True)
+            unsuccessful = subprocess.check_call(command,shell=True)
+            if unsuccessful > 0:
+                self
         elif cmd_type is "REST":
             pass
         elif cmd_type is "SAY":
             pass
         elif cmd_type is "PRINT":
-            pass
+            send_string(command)
         elif cmd_type is "META":
             metacommmand(command)
         else:
@@ -94,12 +98,10 @@ class commands():
         if (command == "quit_freespeech"):
             parent.Gtk.main_quit()
         elif (command == "file_open"):
-            parent.file_open()
+            metacommands.file_open()
         elif (command == "file_save_as"):
-            parent.file_save_as()
+            metacommands.file_save_as()
         elif (command == "file_save"):
             parent.file_save()
         elif (command == "freespeech_help"):
             parent.show_commands()
-
-        

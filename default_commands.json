@@ -24,13 +24,28 @@
             'new paragraph':  'self.new_paragraph',
         }
 
+    Please note that the "listen_for" field is a python-interpreted regular expression, which
+    requires backslash escapes for JSON, python, AND regex, resulting in a \* JSON statement 
+    (i.e \x) having to be typed as a sixfold-escaped backslash-escaped character (i.e. \\\\\\x).
+    This only applies to the "listen_for" field
 */
 
 [
     {
+        "name": "type_text",
+        "listen_for": "[speak|print] \\\\\\w*",
+        "cmd_type": "PRINT",
+        "description": "Simulates keystrokes for a string",
+        "command": "", // somehow put the text in
+        "training_phrases":
+        [
+            "speak"
+        ]
+    }
+    {
         "name":"quit_freespeech",
         "listen_for":"[kill|quit|stop|shut down] [listening|free speech|mike|microphone]",
-        "cmd_type": "meta",
+        "cmd_type": "META",
         "command": "quit_freespeech",
         "description": "Stops FreeSpeech.",
         "training_phrases":
@@ -46,10 +61,10 @@
         ]
     },{
         "name":"open_file_for_editing",
-        "listen_for": "(open)+ (new)? ?(file)+( \\w*){0,5}", 
+        "listen_for": "(open)+ (new)? ?(file)+( \\\\\\w*){0,5}", 
         // ^^ should include up to five words directly after the keyphrase.
         // If this doesn't work or causes problems, revise.
-        "cmd_type": "meta",
+        "cmd_type": "META",
         "command": "file_open",
         "description": "Opens a file for editing, if exists. Otherwise, opens a new file with the given filename.",
         "training_phrases":
@@ -59,8 +74,8 @@
         ]
     },{
         "name":"save_working_file",
-        "listen_for": "(save)( \\w*){0,3}|(that works)",
-        "cmd_type": "meta",
+        "listen_for": "(save)( \\\\\\w*){0,3}|(that works)",
+        "cmd_type": "META",
         "command": "file_save",
         "description": "Saves the file that is currently being worked on.",
         "training_phrases":
@@ -72,25 +87,25 @@
     },{
         "name":"save_working_file_as_new",
         "listen_for": "[branch and save|save as|save new.*]",
-        "cmd_type": "meta",
+        "cmd_type": "META",
         "command":"file_save_as",
         "description":"Saves the file that is currently being worked on as a new file"
     },{
         "name":"show_commands_list",
         "listen_for":"[help|help me|list commands|show.*commands.*]",
-        "cmd_type":"meta",
+        "cmd_type":"META",
         "command":"freespeech_help",
         "description": "Parses all commands and displays them in a popup window"
     },{
         "name": "blank_editor",
         "listen_for": "[clear edits|edit clear|close file]",
-        "cmd_type": "meta",
+        "cmd_type": "META",
         "command": "clear_edits",
         "description": "Clears the text from the editor screen."
     },{
         "name": "delet_this",
         "listen_for": "[botch|delete]",
-        "cmd_type": "meta",
+        "cmd_type": "META",
         "command":"delete_ur_life",
         "description":"deletes stuff, i guess"
     }
