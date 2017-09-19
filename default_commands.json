@@ -145,7 +145,7 @@
         "description":"deletes stuff",
         "training_phrases":
         [
-            "delete",
+            "delete",z
             "delete this"
         ]
     }

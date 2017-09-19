@@ -1,7 +1,7 @@
-import re, json, subprocess, os, shutil, metacommmands
+import re, json, subprocess, os, shutil, freespeech
 from send_key import *
 from freespeech import conf_files, log_msg
-class commands():
+class Commands():
     cmds            = {}
     quick_ref       = []
     confdir         = os.path.join("/", "etc", "freespeech")
@@ -12,7 +12,6 @@ class commands():
     cmd_types       = ["PYTHON","BASH","REST","SAY","PRINT","META"]
     def __init__(self,parent=None):
         cmd_list = load_commands()
-        metacommmands.__init__()
         self.parent=parent
 
     def new_command(self, name, listen_for, cmd_type, command, description, training_phrases):
@@ -65,12 +64,12 @@ class commands():
                 valid=True
                 find_cmd(d)
         # valid should have been changed to True if a valid command was found 
-        if valid=False:
+        if valid==False:
             command_not_found()
 
     def find_cmd(self, name):
         for cmd in cmd_list:
-            if name=cmd["Name"]:
+            if name==cmd["Name"]:
                 execute(cmd_type=cmd["cmd_type"],command=cmd["command"])
 
     def execute(self,cmd_type, command):
@@ -98,4 +97,4 @@ class commands():
         pass
 
     def metacommand(command):
-        eval("metacommands." + command + "()")
+        eval("freespeech." + command + "()")

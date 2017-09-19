@@ -1,6 +1,7 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
+from freespeech import log_msg
 LOW, NORMAL, HIGH, FATAL = 0,1,2,3
 SUCCESSFULLY, ERROR, SUBPROCESS_FAILURE = 0,1,2
 
@@ -33,15 +34,7 @@ class Messenger(Gtk.Dialog):
         if parent is None:
             parent=self
         if severity is LOW:
-            print(errormsg) #simply pushes to stdout, rather than nagging with a popup.
-            # Actually, we should probably use something more like notify-send than
-            # stdout, as we are no longer writing with the asssumtion that FreeSpeech
-            # will be run from a terminal.
-        elif severity is HIGH:
-            #TODO
-            self.label.set_text(errormsg)
-            self.run()
-            self.hide()
+            freespeech.log_msg(msg=errormsg,msg_type=ERROR) 
         elif severity is FATAL:
             self.label.set_text(errormsg)
             self.run()
@@ -51,8 +44,27 @@ class Messenger(Gtk.Dialog):
             self.label.set_text(errormsg)
             self.run()
             self.hide()
+            set_defaults()
     def run(self, parent=None, errormsg="No error message has been included"):
         if parent is None:
             parent=self
         self.label.set_text(errormsg)
         return super().run()
+
+    # getters and setters
+    def set_defaults(self):
+        set_title()
+        set_flags()
+        set_buttons()
+    def set_title(self,title="Error"):
+        self.title=title
+    def set_buttons(self, buttons=(Gtk.STOCK_OK,Gtk.ResponseType.OK)):
+        self.buttons=buttons
+    def set_flags(self,flags=Gtk.DialogFlags.MODAL):
+        self.dialogFlags=flags
+    def get_title(self):
+        return self.title
+    def get_buttons(self):
+        return buttons
+    def get_flags():
+        return dialogFlags
