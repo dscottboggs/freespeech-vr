@@ -90,6 +90,7 @@ conf_files={
 
 class FreeSpeech(object):
     """PyGTK continuous speech recognition scratchpad"""
+    snore = None
     def __init__(self):
         # Messenger is for showing dialogs, logger is for logging
         self.logger = LogRecorder()
@@ -104,8 +105,9 @@ class FreeSpeech(object):
         self.ttext = ""
         self.init_gui()
         self.err.set_parent(self)
-        self.init_commands()
+        #self.init_prefs()
         self.init_file_chooser()
+        self.start_listening()
     def prereqs(self):
         # place to store the currently open file name, if any
         self.check_args()
@@ -173,7 +175,7 @@ class FreeSpeech(object):
             if arg is ("--help" or "-h"):
                 self.display_help()
             if arg is ("-e" or "--engine"):
-                self.engine = sys.argv[i+1]
+                ENGINE_ = sys.argv[i+1]
     def display_help(self):
         """ diplays a basic list of command line options."""
         print(str(textwrap.dedent("\
@@ -217,17 +219,17 @@ class FreeSpeech(object):
         self.scroller.add(self.text)
         vbox.pack_start(self.scroller, True, True, 5)
         vbox.pack_end(hbox, False, False, False)
-        #self.button0 = Gtk.Button("Learn")
+        self.button0 = Gtk.Button("Learn")
         self.button0.connect('clicked', self.learn_new_words)
         self.button1 = Gtk.ToggleButton("Send keys")
         self.button1.connect('clicked', self.toggle_echo)
-        self.button2 = Gtk.Button("Show commands")
-        self.button2.connect('clicked', self.show_commands)
+        #self.button2 = Gtk.Button("Show commands")
+        #self.button2.connect('clicked', self.show_commands)
         self.button3 = Gtk.ToggleButton("Mute")
         self.button3.connect('clicked', self.mute)
         hbox.pack_start(self.button0, True, False, 0)
         hbox.pack_start(self.button1, True, False, 0)
-        hbox.pack_start(self.button2, True, False, 0)
+        #hbox.pack_start(self.button2, True, False, 0)
         hbox.pack_start(self.button3, True, False, 0)
         self.window.add(vbox)
         self.window.show_all()
@@ -312,13 +314,13 @@ If new commands don't work click the learn button to train them.")
         me.checkbox.show()
         me.action_area.pack_start(me.checkbox, False, False, 0)
         me.liststore=Gtk.ListStore(str, str)
-        me.liststore.set_sort_column_id(0, Gtk.SORT_ASCENDING)
+        me.liststore.set_sort_column_id(0, Gtk.SortType.ASCENDING)
         me.tree=Gtk.TreeView(me.liststore)
         editable = Gtk.CellRendererText()
         fixed = Gtk.CellRendererText()
         editable.set_property('editable', True)
         editable.connect('edited', self.edited_cb)
-        me.connect("expose-event", self.prefs_expose)
+        me.connect("activate", self.prefs_expose)
         me.liststore.clear()
         for key, value in list(self.commands.items()):
             me.liststore.append([key, eval(value).__doc__])
@@ -709,16 +711,16 @@ If new commands don't work click the learn button to train them.")
         # snore ^^ is a method that can be called to stop wreck/mike from listening.
 
 
-    def interpret(self, audio, wreck, logger):
+    def interpret(self, audio, wreck, engine, logger):
         logger.log_message("Interpreting audio...")
         try:
-            if ENGINE is 'pocketsphinx':
+            if engine is 'pocketsphinx':
                 return wreck.recognize_sphinx(audio)
-            elif ENGINE is 'gv':
+            elif engine is 'gv':
                 return wreck.recognize_google(audio)
             # etc engines todo
             else:
-                raise ValueError(ENGINE)
+                raise ValueError(engine)
         except speech_recognition.UnknownValueError:
             logger.log_message("Nothing understood", WARN)
             return False
@@ -726,14 +728,14 @@ If new commands don't work click the learn button to train them.")
             logger.log_message("Sphinx error: {0}".format(error), ERROR)
             return False
         except ValueError as err:
-            logger.log_message("Invalid engine specified" + ENGINE, ERROR)
+            logger.log_message("Invalid engine specified" + engine, ERROR)
             return False
 
 
-    def final_result(self, audio):
+    def final_result(self, wreck, audio):
         """Insert the final result into the textbox."""
-        hypothesis = self.interpret(audio, self.wreck, self.engine, self.logger)
-        self.logger.log("Received text is " + hypothesis)
+        hypothesis = self.interpret(audio, self.wreck, ENGINE, self.logger)
+        self.logger.log_message("Received text is " + hypothesis)
         if not hypothesis:
             self.err.show_msg("Invalid engine response. See the log for errors.")
         # All this stuff appears as one single action
@@ -942,21 +944,23 @@ class Wreckognizer(speech_recognition.Recognizer):
     def recognize_sphinx(self, audio_data, language='en-US', keyword_entries=None, grammar=None,
             show_all=False, acoustic_model=None, language_model=None, phoneme_model=None,
             base_dir=None):
-        assert (isinstance(audio_data, AudioData),
-            "Given parameter 'audio_data' must be audio data (of AudioData type)")
-        assert (isinstance(language, str) or language is None,
-            "Language setting must be a string.")
-        assert (isinstance(acoustic_model, str) or acoustic_model is None,
-            "acoustic_model filename must be a string.")
-        assert (isinstance(language_model, str) or language_model is None,
-            "language_model filename must be a string.")
-        assert (isinstance(phoneme_model, str) or phoneme_model is None,
-            "phoneme_model filename must be a string.")
-        assert ((isinstance(base_dir, str) or base_dir is None),
-            "base directory path must be formatted as a string")
-        assert (keyword_entries is None or all(isinstance(keyword, (type(""), type(u'')))
-            and 0 <= sensitivity <= 1 for keyword, sensitivity in keyword_entries),
-            "``keyword_entries`` must be ``None`` or a list of pairs of strings and numbers between 0 and 1")
+        assert isinstance(audio_data, AudioData),                                                  \
+            "Given parameter 'audio_data' must be audio data (of AudioData type)"
+        assert isinstance(language, str) or language is None,                                      \
+            "Language setting must be a string."
+        assert isinstance(acoustic_model, str) or acoustic_model is None,                          \
+            "acoustic_model filename must be a string."
+        assert isinstance(language_model, str) or language_model is None,                          \
+            "language_model filename must be a string."
+        assert isinstance(phoneme_model, str) or phoneme_model is None,                            \
+            "phoneme_model filename must be a string."
+        assert (isinstance(base_dir, str) or base_dir is None),                                    \
+            "base directory path must be formatted as a string"
+        assert keyword_entries is None or all(isinstance(keyword, (type(""), type(u'')))           \
+            and 0 <= sensitivity <= 1 for keyword, sensitivity in keyword_entries),                \
+            str(textwrap.dedent("\
+            ``keyword_entries`` must be ``None`` or a list of pairs of strings and numbers between \
+            0 and 1"))
         # Holy crap that's a complicated line ^^
         try:
             from pocketsphinx import pocketsphinx, Jsgf, FsgModel
