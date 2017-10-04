@@ -1,1030 +1,693 @@
 ************* Module freespeech
-W:808, 0: TODO ^^ (fixme)
-W:809, 0: FIXME ^^ (fixme)
-C: 39, 0: Exactly one space required after comma
-SUCCESSFULLY, ERROR, SUBPROCESS_FAILURE = 0,1,2
-                                           ^ (bad-whitespace)
-C: 39, 0: Exactly one space required after comma
-SUCCESSFULLY, ERROR, SUBPROCESS_FAILURE = 0,1,2
-                                             ^ (bad-whitespace)
-C: 40, 0: Exactly one space required after comma
-LOW, NORMAL, HIGH, FATAL = 0,1,2,3
-                            ^ (bad-whitespace)
-C: 40, 0: Exactly one space required after comma
-LOW, NORMAL, HIGH, FATAL = 0,1,2,3
-                              ^ (bad-whitespace)
-C: 40, 0: Exactly one space required after comma
-LOW, NORMAL, HIGH, FATAL = 0,1,2,3
-                                ^ (bad-whitespace)
-C: 41, 0: Exactly one space required after comma
-LOG, DEBUG, WARN = 0,3,4 # ERROR and SUBPROCESS_FAILURE were already set as exit codes.
-                    ^ (bad-whitespace)
-C: 41, 0: Exactly one space required after comma
-LOG, DEBUG, WARN = 0,3,4 # ERROR and SUBPROCESS_FAILURE were already set as exit codes.
-                      ^ (bad-whitespace)
-C: 42, 0: No space allowed after bracket
+W:896, 0: TODO ^^ (fixme)
+W:897, 0: FIXME ^^ (fixme)
+C: 61, 0: No space allowed after bracket
 loglvl = [ "LOG", "ERROR", "SUBPROCESS_MESSAGE", "DEBUG", "WARN" ]
          ^ (bad-whitespace)
-C: 42, 0: No space allowed before bracket
+C: 61, 0: No space allowed before bracket
 loglvl = [ "LOG", "ERROR", "SUBPROCESS_MESSAGE", "DEBUG", "WARN" ]
                                                                  ^ (bad-whitespace)
-C: 44, 0: Exactly one space required before assignment
-sphinx_deps    = "python-sphinxbase", "sphinxbase-utils"," sphinx-common"
-               ^ (bad-whitespace)
-C: 44, 0: Exactly one space required after comma
-sphinx_deps    = "python-sphinxbase", "sphinxbase-utils"," sphinx-common"
-                                                        ^ (bad-whitespace)
-C: 45, 0: Line too long (122/100) (line-too-long)
-C: 47, 0: Line too long (199/100) (line-too-long)
-C: 47, 0: Exactly one space required after comma
-toolkit_dependencies = "text2wfreq", "wfreq2vocab", "text2wngram", "text2idngram", "ngram2mgram", "wngram2idngram", "idngram2stats", "mergeidngram", "idngram2lm", "binlm2arpa", "evallm","interpolate"
-                                                                                                                                                                                         ^ (bad-whitespace)
-C: 48, 0: Exactly one space required before assignment
+C: 62, 0: Exactly one space required before assignment
 refdir  = os.path.join("/", "usr", "share", "freespeech")
         ^ (bad-whitespace)
-C: 56, 0: Exactly one space required around assignment
+C: 71, 0: Exactly one space required around assignment
 ref_files={
          ^ (bad-whitespace)
-C: 63, 0: Exactly one space required around assignment
+C: 79, 0: Exactly one space required around assignment
 conf_files={
           ^ (bad-whitespace)
-C: 80, 0: Exactly one space required around assignment
-        self.err=Messenger(parent=None)
-                ^ (bad-whitespace)
-C: 95, 0: Exactly one space required around assignment
-            self.open_filename=''
-                              ^ (bad-whitespace)
-C:106, 0: Exactly one space required after comma
-            errno,strerror=this_error.args
-                 ^ (bad-whitespace)
-C:106, 0: Exactly one space required around assignment
-            errno,strerror=this_error.args
+C:114, 0: Exactly one space required around assignment
+        self.open_filename=''
                           ^ (bad-whitespace)
-C:107, 0: Line too long (104/100) (line-too-long)
-C:107, 0: No space allowed around keyword argument assignment
-            self.err.show(errormsg = "in __init__ -- " + str(errno) + ": " + strerror, severity = FATAL)
-                                   ^ (bad-whitespace)
-C:107, 0: No space allowed around keyword argument assignment
-            self.err.show(errormsg = "in __init__ -- " + str(errno) + ": " + strerror, severity = FATAL)
-                                                                                                ^ (bad-whitespace)
-C:109, 0: Exactly one space required after comma
+C:117, 0: Exactly one space required after comma
+        self.check_file(conf_files['dic'],      ref_files['dic'])
+                                         ^ (bad-whitespace)
+C:118, 0: Exactly one space required after comma
+        self.check_file(conf_files['arpa'],     ref_files['lm'])
+                                          ^ (bad-whitespace)
+C:121, 0: Exactly one space required after comma
         if not os.access("/usr/tmp/",os.W_OK):
                                     ^ (bad-whitespace)
-C:111, 0: Exactly one space required after comma
+C:123, 0: Exactly one space required after comma
                 subprocess.call("sudo ln -s /tmp /usr/tmp",shell=True,executable='/bin/bash')
                                                           ^ (bad-whitespace)
-C:111, 0: Exactly one space required after comma
+C:123, 0: Exactly one space required after comma
                 subprocess.call("sudo ln -s /tmp /usr/tmp",shell=True,executable='/bin/bash')
                                                                      ^ (bad-whitespace)
-C:112, 0: Exactly one space required after comma
+C:124, 0: Exactly one space required after comma
                 if os.access("/usr/tmp",os.W_OK):
                                        ^ (bad-whitespace)
-C:121, 0: Line too long (119/100) (line-too-long)
-C:124, 0: Line too long (115/100) (line-too-long)
-C:124, 0: Exactly one space required after comma
-        ps_aux_grep_jack = subprocess.check_output("ps aux | grep jack",shell=True,executable='/bin/bash').decode()
-                                                                       ^ (bad-whitespace)
-C:124, 0: Exactly one space required after comma
-        ps_aux_grep_jack = subprocess.check_output("ps aux | grep jack",shell=True,executable='/bin/bash').decode()
-                                                                                  ^ (bad-whitespace)
-C:129, 0: Wrong continued indentation (add 14 spaces).
-                    gtk.STOCK_NO, gtk.ResponseType.NO,
-                    ^             | (bad-continuation)
-C:130, 0: Wrong continued indentation (add 14 spaces).
-                    gtk.STOCK_YES, gtk.ResponseType.YES))
-                    ^             | (bad-continuation)
-C:137, 0: Line too long (115/100) (line-too-long)
-C:149, 0: Exactly one space required around assignment
-                counter=0
-                       ^ (bad-whitespace)
-C:154, 0: Line too long (108/100) (line-too-long)
-C:156, 0: Line too long (137/100) (line-too-long)
-C:156, 0: Unnecessary parens after 'while' keyword (superfluous-parens)
-C:156, 0: No space allowed after bracket
-                while ("/usr/bin/jackd" not in str(subprocess.check_output( "ps aux | grep jack", shell=True, executable='/bin/bash' ))):
-                                                                          ^ (bad-whitespace)
-C:156, 0: No space allowed before bracket
-                while ("/usr/bin/jackd" not in str(subprocess.check_output( "ps aux | grep jack", shell=True, executable='/bin/bash' ))):
-                                                                                                                                     ^ (bad-whitespace)
-C:158, 0: Unnecessary parens after 'if' keyword (superfluous-parens)
-C:159, 0: Exactly one space required around assignment
-                        counter+=1
-                               ^^ (bad-whitespace)
-C:160, 0: Trailing whitespace (trailing-whitespace)
-C:161, 0: Exactly one space required around assignment
-                        err=messenger.__init__(title="Couldn't start JACK")
-                           ^ (bad-whitespace)
-C:169, 0: No space allowed before comma
-    def log_msg(self, msg , msgtype=LOG):
-                          ^ (bad-whitespace)
-C:217, 0: Wrong continued indentation (add 42 spaces).
-        parent=self.window, action=Gtk.FileChooserAction.OPEN,
-        ^                                         | (bad-continuation)
-C:218, 0: Wrong continued indentation (add 42 spaces).
-        buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-        ^                                         | (bad-continuation)
-C:219, 0: Wrong continued indentation (add 4 spaces).
-             Gtk.STOCK_OK, Gtk.ResponseType.OK))
-             ^   | (bad-continuation)
-C:224, 0: Wrong continued indentation (add 31 spaces).
-            0,  # In previous versions of Gtk this was Gtk.DIALOG_DESTROY_WITH_PARENT, but
-            ^                              | (bad-continuation)
-C:225, 0: Wrong continued indentation.
-            #in the current version of Gtk that is invalid. The first result on DuckDuckGo
-            ^   |                          | (bad-continuation)
-C:227, 0: Wrong continued indentation (add 31 spaces).
-            (gtk.STOCK_CANCEL, gtk.ResponseType.REJECT,
-            ^                              | (bad-continuation)
-C:228, 0: Wrong continued indentation (add 1 space).
-            gtk.STOCK_OK, gtk.ResponseType.ACCEPT))
-            ^| (bad-continuation)
-C:229, 0: Line too long (102/100) (line-too-long)
-C:231, 0: Exactly one space required after comma
-        for command_name,command in self.cmds.iter():
-                        ^ (bad-whitespace)
-C:233, 0: Trailing whitespace (trailing-whitespace)
-C:235, 0: Trailing whitespace (trailing-whitespace)
-C:241, 0: Exactly one space required after comma
-            no,msg = e.args
-              ^ (bad-whitespace)
-C:242, 0: Line too long (105/100) (line-too-long)
-C:242, 0: No space allowed after keyword argument assignment
-            self.err.show(errormsg= no + ": " + msg + "\n...Occurred in init_commands()", severity=FATAL)
-                                  ^ (bad-whitespace)
-C:248, 0: Exactly one space required around assignment
-        me.checkbox=gtk.CheckButton("Restore Defaults")
+C:313, 0: Exactly one space required around assignment
+        me.checkbox=Gtk.CheckButton("Restore Defaults")
                    ^ (bad-whitespace)
-C:251, 0: Exactly one space required around assignment
-        me.liststore=gtk.ListStore(str, str)
+C:316, 0: Exactly one space required around assignment
+        me.liststore=Gtk.ListStore(str, str)
                     ^ (bad-whitespace)
-C:253, 0: Exactly one space required around assignment
-        me.tree=gtk.TreeView(me.liststore)
+C:318, 0: Exactly one space required around assignment
+        me.tree=Gtk.TreeView(me.liststore)
                ^ (bad-whitespace)
-C:261, 0: Exactly one space required after comma
-        column = gtk.TreeViewColumn("Spoken command",editable,text=0)
+C:329, 0: Exactly one space required after comma
+        column = Gtk.TreeViewColumn("Spoken command",editable,text=0)
                                                     ^ (bad-whitespace)
-C:261, 0: Exactly one space required after comma
-        column = gtk.TreeViewColumn("Spoken command",editable,text=0)
+C:329, 0: Exactly one space required after comma
+        column = Gtk.TreeViewColumn("Spoken command",editable,text=0)
                                                              ^ (bad-whitespace)
-C:263, 0: Exactly one space required after comma
-        column = gtk.TreeViewColumn("What it does",fixed,text=1)
+C:332, 0: Exactly one space required after comma
+        column = Gtk.TreeViewColumn("What it does",fixed,text=1)
                                                   ^ (bad-whitespace)
-C:263, 0: Exactly one space required after comma
-        column = gtk.TreeViewColumn("What it does",fixed,text=1)
+C:332, 0: Exactly one space required after comma
+        column = Gtk.TreeViewColumn("What it does",fixed,text=1)
                                                         ^ (bad-whitespace)
-C:275, 0: Exactly one space required after comma
-        for command_name,command in self.cmds.iter():
+C:344, 0: Exactly one space required after comma
+        for command_name,command in iter(self.cmds):
                         ^ (bad-whitespace)
-C:277, 0: Exactly one space required after comma
+C:346, 0: Exactly one space required after comma
                 me.liststore.append([command_name,phrase])
                                                  ^ (bad-whitespace)
-C:278, 0: Exactly one space required after comma
+C:347, 0: Exactly one space required after comma
                 print(command_name,phrase,sep="  --  ")
                                   ^ (bad-whitespace)
-C:278, 0: Exactly one space required after comma
+C:347, 0: Exactly one space required after comma
                 print(command_name,phrase,sep="  --  ")
                                          ^ (bad-whitespace)
-C:284, 0: Exactly one space required around assignment
-                self.cmds=json.loads(f.read())
-                         ^ (bad-whitespace)
-C:286, 0: Exactly one space required after comma
+C:355, 0: Exactly one space required after comma
             no,msg = e.args
               ^ (bad-whitespace)
-C:287, 0: Line too long (103/100) (line-too-long)
-C:287, 0: No space allowed around keyword argument assignment
-            self.err.show(errormsg = no + ": " + msg + "\n...Occurred in read_prefs()", severity=FATAL)
+C:356, 0: No space allowed around keyword argument assignment
+            self.err.show(errormsg = no + ": " + msg
                                    ^ (bad-whitespace)
-C:294, 0: Unnecessary parens after 'if' keyword (superfluous-parens)
-C:294, 0: Exactly one space required after comma
+C:363, 0: Exactly one space required after comma
+            no,msg = e.args
+              ^ (bad-whitespace)
+C:364, 0: No space allowed around keyword argument assignment
+            self.err.show(errormsg = no + ": " + msg
+                                   ^ (bad-whitespace)
+C:371, 0: Exactly one space required around assignment
+                self.cmds=json.loads(f.read())
+                         ^ (bad-whitespace)
+C:373, 0: Exactly one space required after comma
+            no,msg = e.args
+              ^ (bad-whitespace)
+C:374, 0: No space allowed around keyword argument assignment
+            self.err.show(errormsg = no + ": " + msg + "\n...Occurred in read_prefs()",
+                                   ^ (bad-whitespace)
+C:382, 0: Exactly one space required after comma
             if (os.access(conf_files["commands.json"],os.R_OK)):
                                                      ^ (bad-whitespace)
-C:295, 0: Exactly one space required after comma
+C:383, 0: Exactly one space required after comma
                 shutil.copy(conf_files["commands.json"],os.path.join(confdir,"commands.json.bak"))
                                                        ^ (bad-whitespace)
-C:295, 0: Exactly one space required after comma
+C:383, 0: Exactly one space required after comma
                 shutil.copy(conf_files["commands.json"],os.path.join(confdir,"commands.json.bak"))
                                                                             ^ (bad-whitespace)
-C:297, 0: Line too long (102/100) (line-too-long)
-C:298, 0: Exactly one space required after comma
-            shutil.copy(ref_files["commands.json"],conf_files["commands.json"])
-                                                  ^ (bad-whitespace)
-C:300, 0: Exactly one space required around comparison
+C:385, 0: Line too long (102/100) (line-too-long)
+C:388, 0: Exactly one space required around comparison
             if event!=Gtk.ResponseType.OK:
                     ^^ (bad-whitespace)
-C:305, 0: Trailing whitespace (trailing-whitespace)
-C:313, 0: Exactly one space required around assignment
+C:398, 0: Exactly one space required around assignment
         liststore=self.prefsdialog.liststore
                  ^ (bad-whitespace)
-C:315, 0: Exactly one space required after comma
+C:400, 0: Exactly one space required after comma
         old_text = liststore.get_value(treeiter,0)
                                                ^ (bad-whitespace)
-C:317, 0: Exactly one space required after comma
+C:402, 0: Exactly one space required after comma
             liststore.set_value(treeiter,0,new_text)
                                         ^ (bad-whitespace)
-C:317, 0: Exactly one space required after comma
+C:402, 0: Exactly one space required after comma
             liststore.set_value(treeiter,0,new_text)
                                           ^ (bad-whitespace)
-C:318, 0: Exactly one space required around assignment
+C:403, 0: Exactly one space required around assignment
             self.cmds[new_text]=self.cmds[old_text]
                                ^ (bad-whitespace)
-C:319, 0: Unnecessary parens after 'del' keyword (superfluous-parens)
-C:321, 0: Exactly one space required after comma
-        for command_name,command in self.cmds.iter():
-                        ^ (bad-whitespace)
-C:326, 0: Exactly one space required around assignment
+C:409, 0: Exactly one space required around assignment
         me=self.prefsdialog
           ^ (bad-whitespace)
-C:343, 0: Line too long (142/100) (line-too-long)
-C:343, 0: No space allowed around keyword argument assignment
-            commands.search(heard_str = msg.get_structure().get_value('hypothesis'), confidence = msg.get_structure().get_value('confidence'))
-                                      ^ (bad-whitespace)
-C:343, 0: No space allowed around keyword argument assignment
-            commands.search(heard_str = msg.get_structure().get_value('hypothesis'), confidence = msg.get_structure().get_value('confidence'))
-                                                                                                ^ (bad-whitespace)
-C:351, 0: Line too long (196/100) (line-too-long)
-C:352, 0: Line too long (105/100) (line-too-long)
-C:353, 0: Trailing whitespace (trailing-whitespace)
-C:353, 0: Line too long (104/100) (line-too-long)
-C:354, 0: Line too long (104/100) (line-too-long)
-C:355, 0: Line too long (104/100) (line-too-long)
-C:356, 0: Line too long (102/100) (line-too-long)
-C:357, 0: Line too long (104/100) (line-too-long)
-C:358, 0: Line too long (103/100) (line-too-long)
-C:385, 0: Trailing whitespace (trailing-whitespace)
-C:391, 0: Trailing whitespace (trailing-whitespace)
-C:396, 0: Trailing whitespace (trailing-whitespace)
-C:399, 0: Trailing whitespace (trailing-whitespace)
-C:407, 0: Exactly one space required after comma
+C:425, 0: No space allowed around keyword argument assignment
+            corpus = self.prepare_corpus(txt=self.textbuf, bounds=self.textbuf.get_bounds())
+                   ^ (bad-whitespace)
+C:435, 0: Exactly one space required after comma
             num,msg=e.args
                ^ (bad-whitespace)
-C:407, 0: Exactly one space required around assignment
+C:435, 0: Exactly one space required around assignment
             num,msg=e.args
                    ^ (bad-whitespace)
-C:408, 0: No space allowed after keyword argument assignment
-            self.err.show(errormsg= num + ": " + msg, severity= FATAL)
-                                  ^ (bad-whitespace)
-C:408, 0: No space allowed after keyword argument assignment
-            self.err.show(errormsg= num + ": " + msg, severity= FATAL)
-                                                              ^ (bad-whitespace)
-C:410, 0: Exactly one space required after comma
+C:438, 0: Exactly one space required after comma
             num,msg=e.args
                ^ (bad-whitespace)
-C:410, 0: Exactly one space required around assignment
+C:438, 0: Exactly one space required around assignment
             num,msg=e.args
                    ^ (bad-whitespace)
-C:411, 0: No space allowed after keyword argument assignment
-            self.err.show(errormsg= num + ": " + msg,severity=FATAL)
-                                  ^ (bad-whitespace)
-C:411, 0: Exactly one space required after comma
-            self.err.show(errormsg= num + ": " + msg,severity=FATAL)
-                                                    ^ (bad-whitespace)
-C:412, 0: Trailing whitespace (trailing-whitespace)
-C:414, 0: Exactly one space required around comparison
+C:442, 0: Exactly one space required around comparison
         if platform.system()=='Windows':
                             ^^ (bad-whitespace)
-C:418, 0: Trailing whitespace (trailing-whitespace)
-C:423, 0: Line too long (206/100) (line-too-long)
-C:427, 0: Exactly one space required after comma
+C:458, 0: Exactly one space required after comma
             num,msg = e.args
                ^ (bad-whitespace)
-C:428, 0: Line too long (106/100) (line-too-long)
-C:428, 0: No space allowed after keyword argument assignment
-            self.err.show(errormsg= 'Trouble writing ' + conf_files["vocab"] + ": " + msg, severity=FATAL)
+C:459, 0: No space allowed after keyword argument assignment
+            self.err.show(errormsg= 'Trouble writing ' + conf_files["vocab"] + ": " + msg,
                                   ^ (bad-whitespace)
-C:433, 0: Line too long (161/100) (line-too-long)
-C:435, 0: Exactly one space required after comma
+C:468, 0: Exactly one space required after comma
             num,msg = e.args
                ^ (bad-whitespace)
-C:436, 0: Line too long (108/100) (line-too-long)
-C:436, 0: No space allowed after keyword argument assignment
-            self.err.show(errormsg= 'Trouble writing ' + conf_files["idngram"] + ": " + msg, severity=FATAL)
+C:469, 0: No space allowed after keyword argument assignment
+            self.err.show(errormsg= 'Trouble writing ' + conf_files["idngram"] + ": " + msg,
                                   ^ (bad-whitespace)
-C:437, 0: Trailing whitespace (trailing-whitespace)
-C:442, 0: Line too long (102/100) (line-too-long)
-C:446, 0: Exactly one space required after comma
+C:481, 0: Exactly one space required after comma
             num,msg = e.args
                ^ (bad-whitespace)
-C:453, 0: Trailing whitespace (trailing-whitespace)
-C:457, 0: Trailing whitespace (trailing-whitespace)
-C:460, 0: Exactly one space required around assignment
+C:498, 0: Exactly one space required around assignment
         response=self.file_chooser.run()
                 ^ (bad-whitespace)
-C:461, 0: Exactly one space required around comparison
+C:499, 0: Exactly one space required around comparison
         if response==Gtk.ResponseType.OK:
                    ^^ (bad-whitespace)
-C:462, 0: Exactly one space required around assignment
+C:500, 0: Exactly one space required around assignment
             self.open_filename=self.file_chooser.get_filename()
                               ^ (bad-whitespace)
-C:468, 0: Trailing whitespace (trailing-whitespace)
-C:471, 0: Exactly one space required around assignment
+C:509, 0: Exactly one space required around assignment
         self.open_filename=''
                           ^ (bad-whitespace)
-C:473, 0: Trailing whitespace (trailing-whitespace)
-C:477, 0: Exactly one space required around assignment
+C:515, 0: Exactly one space required around assignment
             response=self.file_chooser.run()
                     ^ (bad-whitespace)
-C:478, 0: Exactly one space required around comparison
+C:516, 0: Exactly one space required around comparison
             if response==Gtk.ResponseType.OK:
                        ^^ (bad-whitespace)
-C:479, 0: Exactly one space required around assignment
+C:517, 0: Exactly one space required around assignment
                 self.open_filename=self.file_chooser.get_filename()
                                   ^ (bad-whitespace)
-C:484, 0: Exactly one space required after comma
-                f.write(self.textbuf.get_text(self.bounds[0],self.bounds[1]))
-                                                            ^ (bad-whitespace)
-C:486, 0: Trailing whitespace (trailing-whitespace)
-C:489, 0: Exactly one space required around assignment
+C:527, 0: Exactly one space required around assignment
         me=self.prefsdialog
           ^ (bad-whitespace)
-C:503, 0: Trailing whitespace (trailing-whitespace)
-C:517, 0: Trailing whitespace (trailing-whitespace)
-C:525, 0: Trailing whitespace (trailing-whitespace)
-C:545, 0: Unnecessary parens after 'if' keyword (superfluous-parens)
-C:548, 0: Unnecessary parens after 'if' keyword (superfluous-parens)
-C:558, 0: Exactly one space required after comma
-        if (starting or re.match(".*[.?!:]",lastchars)) and len(txt) > 1:
-                                           ^ (bad-whitespace)
-C:561, 0: Line too long (117/100) (line-too-long)
-C:561, 0: Exactly one space required after comma
-        if txt and re.match(r"[^.?!:,\-\"';^@]",txt[0]) and len(lastchars) and lastchars[-1] != " " and not starting:
-                                               ^ (bad-whitespace)
-C:569, 0: Trailing whitespace (trailing-whitespace)
-C:573, 0: Exactly one space required after comma
+C:618, 0: Exactly one space required after comma
             line = re.sub(r'--',          r'--dash',                  line)
                                ^ (bad-whitespace)
-C:573, 0: Exactly one space required after comma
+C:618, 0: Exactly one space required after comma
             line = re.sub(r'--',          r'--dash',                  line)
                                                    ^ (bad-whitespace)
-C:574, 0: Exactly one space required after comma
+C:619, 0: Exactly one space required after comma
             line = re.sub(r'- ',          r'-hyphen ',                line)
                                ^ (bad-whitespace)
-C:574, 0: Exactly one space required after comma
+C:619, 0: Exactly one space required after comma
             line = re.sub(r'- ',          r'-hyphen ',                line)
                                                      ^ (bad-whitespace)
-C:575, 0: Exactly one space required after comma
+C:620, 0: Exactly one space required after comma
             line = re.sub(r'`',           r'`agrave',                 line)
                               ^ (bad-whitespace)
-C:575, 0: Exactly one space required after comma
+C:620, 0: Exactly one space required after comma
             line = re.sub(r'`',           r'`agrave',                 line)
                                                     ^ (bad-whitespace)
-C:576, 0: Exactly one space required after comma
+C:621, 0: Exactly one space required after comma
             line = re.sub(r'=',           r'=equals-sign',            line)
                               ^ (bad-whitespace)
-C:576, 0: Exactly one space required after comma
+C:621, 0: Exactly one space required after comma
             line = re.sub(r'=',           r'=equals-sign',            line)
                                                          ^ (bad-whitespace)
-C:577, 0: Exactly one space required after comma
+C:622, 0: Exactly one space required after comma
             line = re.sub(r'>',           r'>greater-than-symbol',    line)
                               ^ (bad-whitespace)
-C:577, 0: Exactly one space required after comma
+C:622, 0: Exactly one space required after comma
             line = re.sub(r'>',           r'>greater-than-symbol',    line)
                                                                  ^ (bad-whitespace)
-C:578, 0: Exactly one space required after comma
+C:623, 0: Exactly one space required after comma
             line = re.sub(r'<',           r'<less-than-symbol',       line)
                               ^ (bad-whitespace)
-C:578, 0: Exactly one space required after comma
+C:623, 0: Exactly one space required after comma
             line = re.sub(r'<',           r'<less-than-symbol',       line)
                                                               ^ (bad-whitespace)
-C:579, 0: Exactly one space required after comma
+C:624, 0: Exactly one space required after comma
             line = re.sub(r'\|',          r'\|pipe-symbol',           line)
                                ^ (bad-whitespace)
-C:579, 0: Exactly one space required after comma
+C:624, 0: Exactly one space required after comma
             line = re.sub(r'\|',          r'\|pipe-symbol',           line)
                                                           ^ (bad-whitespace)
-C:580, 0: Exactly one space required after comma
+C:625, 0: Exactly one space required after comma
             line = re.sub(r'\. \. \.',    r'...ellipsis',             line)
                                      ^ (bad-whitespace)
-C:580, 0: Exactly one space required after comma
+C:625, 0: Exactly one space required after comma
             line = re.sub(r'\. \. \.',    r'...ellipsis',             line)
                                                         ^ (bad-whitespace)
-C:581, 0: Exactly one space required after comma
+C:626, 0: Exactly one space required after comma
             line = re.sub(r' \. ',        r' .dot ',                  line)
                                  ^ (bad-whitespace)
-C:581, 0: Exactly one space required after comma
+C:626, 0: Exactly one space required after comma
             line = re.sub(r' \. ',        r' .dot ',                  line)
                                                    ^ (bad-whitespace)
-C:582, 0: Exactly one space required after comma
+C:627, 0: Exactly one space required after comma
             line = re.sub(r'\.$',         r'.period',                 line)
                                 ^ (bad-whitespace)
-C:582, 0: Exactly one space required after comma
+C:627, 0: Exactly one space required after comma
             line = re.sub(r'\.$',         r'.period',                 line)
                                                     ^ (bad-whitespace)
-C:583, 0: Exactly one space required after comma
+C:628, 0: Exactly one space required after comma
             line = re.sub(r',',           r',comma',                  line)
                               ^ (bad-whitespace)
-C:583, 0: Exactly one space required after comma
+C:628, 0: Exactly one space required after comma
             line = re.sub(r',',           r',comma',                  line)
                                                    ^ (bad-whitespace)
-C:584, 0: Exactly one space required after comma
+C:629, 0: Exactly one space required after comma
             line = re.sub(r':',           r':colon',                  line)
                               ^ (bad-whitespace)
-C:584, 0: Exactly one space required after comma
+C:629, 0: Exactly one space required after comma
             line = re.sub(r':',           r':colon',                  line)
                                                    ^ (bad-whitespace)
-C:585, 0: Exactly one space required after comma
+C:630, 0: Exactly one space required after comma
             line = re.sub(r'\?',          r'?question-mark',          line)
                                ^ (bad-whitespace)
-C:585, 0: Exactly one space required after comma
+C:630, 0: Exactly one space required after comma
             line = re.sub(r'\?',          r'?question-mark',          line)
                                                            ^ (bad-whitespace)
-C:586, 0: Exactly one space required after comma
+C:631, 0: Exactly one space required after comma
             line = re.sub(r'"',           r'"quote',                  line)
                               ^ (bad-whitespace)
-C:586, 0: Exactly one space required after comma
+C:631, 0: Exactly one space required after comma
             line = re.sub(r'"',           r'"quote',                  line)
                                                    ^ (bad-whitespace)
-C:587, 0: Exactly one space required after comma
+C:632, 0: Exactly one space required after comma
             line = re.sub(r'([\w]) \' s', r"\1's",                    line)
                                                  ^ (bad-whitespace)
-C:588, 0: Exactly one space required after comma
+C:633, 0: Exactly one space required after comma
             line = re.sub(r" '",          r" 'single-quote",          line)
                                ^ (bad-whitespace)
-C:588, 0: Exactly one space required after comma
+C:633, 0: Exactly one space required after comma
             line = re.sub(r" '",          r" 'single-quote",          line)
                                                            ^ (bad-whitespace)
-C:589, 0: Exactly one space required after comma
+C:634, 0: Exactly one space required after comma
             line = re.sub(r'\(',          r'(left-paren',             line)
                                ^ (bad-whitespace)
-C:589, 0: Exactly one space required after comma
+C:634, 0: Exactly one space required after comma
             line = re.sub(r'\(',          r'(left-paren',             line)
                                                         ^ (bad-whitespace)
-C:590, 0: Exactly one space required after comma
+C:635, 0: Exactly one space required after comma
             line = re.sub(r'\)',          r')right-paren',            line)
                                ^ (bad-whitespace)
-C:590, 0: Exactly one space required after comma
+C:635, 0: Exactly one space required after comma
             line = re.sub(r'\)',          r')right-paren',            line)
                                                          ^ (bad-whitespace)
-C:591, 0: Exactly one space required after comma
+C:636, 0: Exactly one space required after comma
             line = re.sub(r'\[',          r'[left-bracket',           line)
                                ^ (bad-whitespace)
-C:591, 0: Exactly one space required after comma
+C:636, 0: Exactly one space required after comma
             line = re.sub(r'\[',          r'[left-bracket',           line)
                                                           ^ (bad-whitespace)
-C:592, 0: Exactly one space required after comma
+C:637, 0: Exactly one space required after comma
             line = re.sub(r'\]',          r']right-bracket',          line)
                                ^ (bad-whitespace)
-C:592, 0: Exactly one space required after comma
+C:637, 0: Exactly one space required after comma
             line = re.sub(r'\]',          r']right-bracket',          line)
                                                            ^ (bad-whitespace)
-C:593, 0: Exactly one space required after comma
+C:638, 0: Exactly one space required after comma
             line = re.sub(r'{',           r'{left-brace',             line)
                               ^ (bad-whitespace)
-C:593, 0: Exactly one space required after comma
+C:638, 0: Exactly one space required after comma
             line = re.sub(r'{',           r'{left-brace',             line)
                                                         ^ (bad-whitespace)
-C:594, 0: Exactly one space required after comma
+C:639, 0: Exactly one space required after comma
             line = re.sub(r'}',           r'}right-brace',            line)
                               ^ (bad-whitespace)
-C:594, 0: Exactly one space required after comma
+C:639, 0: Exactly one space required after comma
             line = re.sub(r'}',           r'}right-brace',            line)
                                                          ^ (bad-whitespace)
-C:595, 0: Exactly one space required after comma
+C:640, 0: Exactly one space required after comma
             line = re.sub(r'!',           r'!exclamation-point',      line)
                               ^ (bad-whitespace)
-C:595, 0: Exactly one space required after comma
+C:640, 0: Exactly one space required after comma
             line = re.sub(r'!',           r'!exclamation-point',      line)
                                                                ^ (bad-whitespace)
-C:596, 0: Exactly one space required after comma
+C:641, 0: Exactly one space required after comma
             line = re.sub(r';',           r';semi-colon',             line)
                               ^ (bad-whitespace)
-C:596, 0: Exactly one space required after comma
+C:641, 0: Exactly one space required after comma
             line = re.sub(r';',           r';semi-colon',             line)
                                                         ^ (bad-whitespace)
-C:597, 0: Exactly one space required after comma
+C:642, 0: Exactly one space required after comma
             line = re.sub(r'/',           r'/slash',                  line)
                               ^ (bad-whitespace)
-C:597, 0: Exactly one space required after comma
+C:642, 0: Exactly one space required after comma
             line = re.sub(r'/',           r'/slash',                  line)
                                                    ^ (bad-whitespace)
-C:598, 0: Exactly one space required after comma
+C:643, 0: Exactly one space required after comma
             line = re.sub(r'%',           r'%percent',                line)
                               ^ (bad-whitespace)
-C:598, 0: Exactly one space required after comma
+C:643, 0: Exactly one space required after comma
             line = re.sub(r'%',           r'%percent',                line)
                                                      ^ (bad-whitespace)
-C:599, 0: Exactly one space required after comma
+C:644, 0: Exactly one space required after comma
             line = re.sub(r'#',           r'#sharp-sign',             line)
                               ^ (bad-whitespace)
-C:599, 0: Exactly one space required after comma
+C:644, 0: Exactly one space required after comma
             line = re.sub(r'#',           r'#sharp-sign',             line)
                                                         ^ (bad-whitespace)
-C:600, 0: Exactly one space required after comma
+C:645, 0: Exactly one space required after comma
             line = re.sub(r'@',           r'@at-symbol',              line)
                               ^ (bad-whitespace)
-C:600, 0: Exactly one space required after comma
+C:645, 0: Exactly one space required after comma
             line = re.sub(r'@',           r'@at-symbol',              line)
                                                        ^ (bad-whitespace)
-C:601, 0: Exactly one space required after comma
+C:646, 0: Exactly one space required after comma
             line = re.sub(r'\*',          r'*asterisk',               line)
                                ^ (bad-whitespace)
-C:601, 0: Exactly one space required after comma
+C:646, 0: Exactly one space required after comma
             line = re.sub(r'\*',          r'*asterisk',               line)
                                                       ^ (bad-whitespace)
-C:602, 0: Exactly one space required after comma
+C:647, 0: Exactly one space required after comma
             line = re.sub(r'\^',          r'^circumflex',             line)
                                ^ (bad-whitespace)
-C:602, 0: Exactly one space required after comma
+C:647, 0: Exactly one space required after comma
             line = re.sub(r'\^',          r'^circumflex',             line)
                                                         ^ (bad-whitespace)
-C:603, 0: Exactly one space required after comma
+C:648, 0: Exactly one space required after comma
             line = re.sub(r'&',           r'&ampersand',              line)
                               ^ (bad-whitespace)
-C:603, 0: Exactly one space required after comma
+C:648, 0: Exactly one space required after comma
             line = re.sub(r'&',           r'&ampersand',              line)
                                                        ^ (bad-whitespace)
-C:604, 0: Exactly one space required after comma
+C:649, 0: Exactly one space required after comma
             line = re.sub(r'\$',          r'$dollar-sign',            line)
                                ^ (bad-whitespace)
-C:604, 0: Exactly one space required after comma
+C:649, 0: Exactly one space required after comma
             line = re.sub(r'\$',          r'$dollar-sign',            line)
                                                          ^ (bad-whitespace)
-C:605, 0: Exactly one space required after comma
+C:650, 0: Exactly one space required after comma
             line = re.sub(r'\+',          r'+plus-symbol',            line)
                                ^ (bad-whitespace)
-C:605, 0: Exactly one space required after comma
+C:650, 0: Exactly one space required after comma
             line = re.sub(r'\+',          r'+plus-symbol',            line)
                                                          ^ (bad-whitespace)
-C:606, 0: Exactly one space required after comma
+C:651, 0: Exactly one space required after comma
             line = re.sub(r'§',           r'§section-sign',           line)
                               ^ (bad-whitespace)
-C:606, 0: Exactly one space required after comma
+C:651, 0: Exactly one space required after comma
             line = re.sub(r'§',           r'§section-sign',           line)
                                                           ^ (bad-whitespace)
-C:607, 0: Exactly one space required after comma
+C:652, 0: Exactly one space required after comma
             line = re.sub(r'¶',           r'¶paragraph-sign',         line)
                               ^ (bad-whitespace)
-C:607, 0: Exactly one space required after comma
+C:652, 0: Exactly one space required after comma
             line = re.sub(r'¶',           r'¶paragraph-sign',         line)
                                                             ^ (bad-whitespace)
-C:608, 0: Exactly one space required after comma
+C:653, 0: Exactly one space required after comma
             line = re.sub(r'¼',           r'¼and-a-quarter',          line)
                               ^ (bad-whitespace)
-C:608, 0: Exactly one space required after comma
+C:653, 0: Exactly one space required after comma
             line = re.sub(r'¼',           r'¼and-a-quarter',          line)
                                                            ^ (bad-whitespace)
-C:609, 0: Exactly one space required after comma
+C:654, 0: Exactly one space required after comma
             line = re.sub(r'½',           r'½and-a-half',             line)
                               ^ (bad-whitespace)
-C:609, 0: Exactly one space required after comma
+C:654, 0: Exactly one space required after comma
             line = re.sub(r'½',           r'½and-a-half',             line)
                                                         ^ (bad-whitespace)
-C:610, 0: Exactly one space required after comma
+C:655, 0: Exactly one space required after comma
             line = re.sub(r'¾',           r'¾and-three-quarters',     line)
                               ^ (bad-whitespace)
-C:610, 0: Exactly one space required after comma
+C:655, 0: Exactly one space required after comma
             line = re.sub(r'¾',           r'¾and-three-quarters',     line)
                                                                 ^ (bad-whitespace)
-C:611, 0: Exactly one space required after comma
+C:656, 0: Exactly one space required after comma
             line = re.sub(r'¿',           r'¿inverted-question-mark', line)
                               ^ (bad-whitespace)
-C:612, 0: Exactly one space required after comma
+C:657, 0: Exactly one space required after comma
             line = re.sub(r'×',           r'×multiplication-sign',    line)
                               ^ (bad-whitespace)
-C:612, 0: Exactly one space required after comma
+C:657, 0: Exactly one space required after comma
             line = re.sub(r'×',           r'×multiplication-sign',    line)
                                                                  ^ (bad-whitespace)
-C:613, 0: Exactly one space required after comma
+C:658, 0: Exactly one space required after comma
             line = re.sub(r'÷',           r'÷division-sign',          line)
                               ^ (bad-whitespace)
-C:613, 0: Exactly one space required after comma
+C:658, 0: Exactly one space required after comma
             line = re.sub(r'÷',           r'÷division-sign',          line)
                                                            ^ (bad-whitespace)
-C:614, 0: Exactly one space required after comma
+C:659, 0: Exactly one space required after comma
             line = re.sub(r'° ',          r'°degree-sign ',           line)
                                ^ (bad-whitespace)
-C:614, 0: Exactly one space required after comma
+C:659, 0: Exactly one space required after comma
             line = re.sub(r'° ',          r'°degree-sign ',           line)
                                                           ^ (bad-whitespace)
-C:615, 0: Exactly one space required after comma
+C:660, 0: Exactly one space required after comma
             line = re.sub(r'©',           r'©copyright-sign',         line)
                               ^ (bad-whitespace)
-C:615, 0: Exactly one space required after comma
+C:660, 0: Exactly one space required after comma
             line = re.sub(r'©',           r'©copyright-sign',         line)
                                                             ^ (bad-whitespace)
-C:616, 0: Trailing whitespace (trailing-whitespace)
-C:616, 0: Exactly one space required after comma
-            line = re.sub(r'™',           r'™trademark-sign',         line)            
+C:661, 0: Exactly one space required after comma
+            line = re.sub(r'™',           r'™trademark-sign',         line)
                               ^ (bad-whitespace)
-C:616, 0: Exactly one space required after comma
-            line = re.sub(r'™',           r'™trademark-sign',         line)            
+C:661, 0: Exactly one space required after comma
+            line = re.sub(r'™',           r'™trademark-sign',         line)
                                                             ^ (bad-whitespace)
-C:617, 0: Exactly one space required after comma
+C:662, 0: Exactly one space required after comma
             line = re.sub(r'®',           r'®registered-sign',      line)
                               ^ (bad-whitespace)
-C:617, 0: Exactly one space required after comma
+C:662, 0: Exactly one space required after comma
             line = re.sub(r'®',           r'®registered-sign',      line)
                                                              ^ (bad-whitespace)
-C:618, 0: Exactly one space required after comma
+C:663, 0: Exactly one space required after comma
             line = re.sub(r'_',           r'_underscore',             line)
                               ^ (bad-whitespace)
-C:618, 0: Exactly one space required after comma
+C:663, 0: Exactly one space required after comma
             line = re.sub(r'_',           r'_underscore',             line)
                                                         ^ (bad-whitespace)
-C:619, 0: Exactly one space required after comma
+C:664, 0: Exactly one space required after comma
             line = re.sub(r'\\',          r'\backslash',              line)
                                ^ (bad-whitespace)
-C:619, 0: Exactly one space required after comma
+C:664, 0: Exactly one space required after comma
             line = re.sub(r'\\',          r'\backslash',              line)
                                                        ^ (bad-whitespace)
-C:620, 0: Exactly one space required after comma
+C:665, 0: Exactly one space required after comma
             line = re.sub(r'^(.)',        r'<s> \1',                  line)
                                  ^ (bad-whitespace)
-C:620, 0: Exactly one space required after comma
+C:665, 0: Exactly one space required after comma
             line = re.sub(r'^(.)',        r'<s> \1',                  line)
                                                    ^ (bad-whitespace)
-C:621, 0: Exactly one space required after comma
+C:666, 0: Exactly one space required after comma
             line = re.sub(r'(.)$',        r'\1 </s>',                 line)
                                  ^ (bad-whitespace)
-C:621, 0: Exactly one space required after comma
+C:666, 0: Exactly one space required after comma
             line = re.sub(r'(.)$',        r'\1 </s>',                 line)
                                                     ^ (bad-whitespace)
-C:632, 0: Trailing whitespace (trailing-whitespace)
-C:632, 0: Exactly one space required before assignment
-        corpus= re.split(r'\n', text)       
-              ^ (bad-whitespace)
-C:672, 0: Exactly one space required after comma
-        for command_name,command in self.cmds.iter():
-                        ^ (bad-whitespace)
-C:674, 0: Unnecessary parens after 'if' keyword (superfluous-parens)
-C:674, 0: Exactly one space required after comma
-            if(command.fullmatch(re.compile(command["listen_for"]),hypothesis.strip().lower())):
-                                                                  ^ (bad-whitespace)
-C:676, 0: Exactly one space required after comma
-                commands.execute(cmd_type=command["cmd_type"],command=command["command"])
-                                                             ^ (bad-whitespace)
-C:688, 0: Exactly one space required around assignment
-        self.open_filename=''
-                          ^ (bad-whitespace)
-C:697, 0: Exactly one space required after comma
-    def select(self,argument=None):
-                   ^ (bad-whitespace)
-C:717, 0: Exactly one space required after comma
-    def delete(self,argument=None):
-                   ^ (bad-whitespace)
-C:735, 0: Exactly one space required after comma
-    def insert(self,argument=None):
-                   ^ (bad-whitespace)
-C:736, 0: Trailing whitespace (trailing-whitespace)
-C:753, 0: Exactly one space required after comma
-    def scratch_that(self,command=None):
-                         ^ (bad-whitespace)
-C:764, 0: Exactly one space required around assignment
-                    b="".join(["\b" for x in range(0,len(scratch))])
-                     ^ (bad-whitespace)
-C:764, 0: Exactly one space required after comma
-                    b="".join(["\b" for x in range(0,len(scratch))])
-                                                    ^ (bad-whitespace)
-C:795, 0: Exactly one space required around assignment
-    title="Error"
-         ^ (bad-whitespace)
-C:796, 0: Exactly one space required around assignment
-    parent=None
-          ^ (bad-whitespace)
-C:797, 0: Exactly one space required around assignment
-    dialogFlags=Gtk.DialogFlags.MODAL
-               ^ (bad-whitespace)
-C:798, 0: Exactly one space required around assignment
-    buttons=0
-           ^ (bad-whitespace)
-C:800, 0: Line too long (131/100) (line-too-long)
-C:814, 0: Exactly one space required after comma
-    def show(self, severity=NORMAL,parent=None,errormsg="no error message has been included"):
-                                  ^ (bad-whitespace)
-C:814, 0: Exactly one space required after comma
-    def show(self, severity=NORMAL,parent=None,errormsg="no error message has been included"):
-                                              ^ (bad-whitespace)
-C:816, 0: Exactly one space required around assignment
-            parent=self
-                  ^ (bad-whitespace)
-C:818, 0: Trailing whitespace (trailing-whitespace)
-C:818, 0: Exactly one space required after comma
-            freespeech.log_msg(msg=errormsg,msg_type=ERROR) 
-                                           ^ (bad-whitespace)
-C:831, 0: Exactly one space required around assignment
-            parent=self
-                  ^ (bad-whitespace)
-C:840, 0: Exactly one space required after comma
+C:674, 0: Exactly one space required before assignment
+        text    = re.sub(r'(\w[.:;?!])\s+(\w)', r'\1\n\2', text)
+                ^ (bad-whitespace)
+C:675, 0: Exactly one space required before assignment
+        text    = re.sub(r'\n+', r'\n', text)
+                ^ (bad-whitespace)
+C:676, 0: Exactly one space required before assignment
+        corpus  = re.split(r'\n', text)
+                ^ (bad-whitespace)
+C:850, 0: Exactly one space required after comma
+                    b = "".join(["\b" for x in range(0,len(scratch))])
+                                                      ^ (bad-whitespace)
+C:881, 0: Exactly one space required before assignment
+    title       = "Error"
+                ^ (bad-whitespace)
+C:882, 0: Exactly one space required before assignment
+    parent      = None
+                ^ (bad-whitespace)
+C:884, 0: Exactly one space required before assignment
+    buttons     = 0
+                ^ (bad-whitespace)
+C:885, 0: Exactly one space required before assignment
+    label       = Gtk.Label("Nice label")
+                ^ (bad-whitespace)
+C:923, 0: Exactly one space required after comma
     def set_title(self,title="Error"):
                       ^ (bad-whitespace)
-C:841, 0: Exactly one space required around assignment
-        self.title=title
-                  ^ (bad-whitespace)
-C:842, 0: Exactly one space required after comma
+C:925, 0: Exactly one space required after comma
     def set_buttons(self, buttons=(Gtk.STOCK_OK,Gtk.ResponseType.OK)):
                                                ^ (bad-whitespace)
-C:843, 0: Exactly one space required around assignment
-        self.buttons=buttons
-                    ^ (bad-whitespace)
-C:844, 0: Exactly one space required after comma
+C:927, 0: Exactly one space required after comma
     def set_flags(self,flags=Gtk.DialogFlags.MODAL):
                       ^ (bad-whitespace)
-C:845, 0: Exactly one space required around assignment
-        self.dialogFlags=flags
-                        ^ (bad-whitespace)
-C:847, 0: Exactly one space required around assignment
-        self.parent=parent
-                   ^ (bad-whitespace)
-C:856, 0: Trailing whitespace (trailing-whitespace)
-C:868, 0: Trailing whitespace (trailing-whitespace)
-C:873, 0: Exactly one space required before assignment
-    cmds            = {}
-                    ^ (bad-whitespace)
-C:874, 0: Exactly one space required before assignment
-    quick_ref       = []
-                    ^ (bad-whitespace)
-C:875, 0: Exactly one space required before assignment
-    confdir         = os.path.join("/", "etc", "freespeech")
-                    ^ (bad-whitespace)
-C:876, 0: Exactly one space required before assignment
-    refdir          = os.path.join("/", "usr", "share", "freespeech")
-                    ^ (bad-whitespace)
-C:877, 0: Exactly one space required before assignment
-    commands_json   = os.path.join(confdir,"commands.json")
-                    ^ (bad-whitespace)
-C:877, 0: Exactly one space required after comma
-    commands_json   = os.path.join(confdir,"commands.json")
-                                          ^ (bad-whitespace)
-C:878, 0: Exactly one space required before assignment
-    parent          = None
-                    ^ (bad-whitespace)
-C:879, 0: Exactly one space required before assignment
-    training_phrases= []
-                    ^ (bad-whitespace)
-C:880, 0: Exactly one space required before assignment
-    cmd_types       = ["PYTHON","BASH","REST","SAY","PRINT","META"]
-                    ^ (bad-whitespace)
-C:880, 0: Exactly one space required after comma
-    cmd_types       = ["PYTHON","BASH","REST","SAY","PRINT","META"]
-                               ^ (bad-whitespace)
-C:880, 0: Exactly one space required after comma
-    cmd_types       = ["PYTHON","BASH","REST","SAY","PRINT","META"]
-                                      ^ (bad-whitespace)
-C:880, 0: Exactly one space required after comma
-    cmd_types       = ["PYTHON","BASH","REST","SAY","PRINT","META"]
-                                             ^ (bad-whitespace)
-C:880, 0: Exactly one space required after comma
-    cmd_types       = ["PYTHON","BASH","REST","SAY","PRINT","META"]
-                                                   ^ (bad-whitespace)
-C:880, 0: Exactly one space required after comma
-    cmd_types       = ["PYTHON","BASH","REST","SAY","PRINT","META"]
-                                                           ^ (bad-whitespace)
-C:881, 0: Exactly one space required after comma
-    def __init__(self,parent=None):
-                     ^ (bad-whitespace)
-C:883, 0: Exactly one space required around assignment
-        self.parent=parent
-                   ^ (bad-whitespace)
-C:886, 0: Line too long (142/100) (line-too-long)
-C:886, 0: No space allowed before :
-        if name is None or listen_for is None or cmd_type is None or command is None or description is None or training_phrases.length() < 1 :
-                                                                                                                                             ^ (bad-whitespace)
-C:889, 0: Exactly one space required after comma
-            freespeech.log_msg(msgtype=4,message="Command type " + cmd_type + " is not valid.")
-                                        ^ (bad-whitespace)
-C:891, 0: Exactly one space required around assignment
-            cmds=self.load_commands()
-                ^ (bad-whitespace)
-C:892, 0: Exactly one space required around assignment
-            cmds[name]={
-                      ^ (bad-whitespace)
-C:905, 0: Line too long (117/100) (line-too-long)
-C:905, 0: Exactly one space required after comma
-                    shutil.copy(os.path.join(refdir,"default_commands.json"), os.path.join(confdir, "commands.json"))
-                                                   ^ (bad-whitespace)
-C:911, 0: Line too long (112/100) (line-too-long)
-C:911, 0: Exactly one space required after comma
-                shutil.copy(os.path.join(refdir,"default_commands.json"), os.path.join(confdir,"commands.json"))
-                                               ^ (bad-whitespace)
-C:911, 0: Exactly one space required after comma
-                shutil.copy(os.path.join(refdir,"default_commands.json"), os.path.join(confdir,"commands.json"))
-                                                                                              ^ (bad-whitespace)
-C:914, 0: Line too long (113/100) (line-too-long)
-C:917, 0: Trailing whitespace (trailing-whitespace)
-C:926, 0: Exactly one space required after comma
-        for cmd_name,cmd in cmd_list:
-                    ^ (bad-whitespace)
-C:928, 0: Exactly one space required after comma
-    def search(self,heard_str,confidence):
-                   ^ (bad-whitespace)
-C:928, 0: Exactly one space required after comma
-    def search(self,heard_str,confidence):
-                             ^ (bad-whitespace)
-C:930, 0: Exactly one space required after comma
-        for c,d in quick_ref:
-             ^ (bad-whitespace)
-C:932, 0: Exactly one space required around assignment
-                valid=True
-                     ^ (bad-whitespace)
-C:934, 0: Trailing whitespace (trailing-whitespace)
-C:935, 0: Exactly one space required around comparison
-        if valid==False:
-                ^^ (bad-whitespace)
-C:940, 0: Exactly one space required around comparison
-            if name==cmd["Name"]:
-                   ^^ (bad-whitespace)
-C:941, 0: Exactly one space required after comma
-                execute(cmd_type=cmd["cmd_type"],command=cmd["command"])
-                                                ^ (bad-whitespace)
-C:943, 0: Exactly one space required after comma
-    def execute(self,cmd_type, command):
-                    ^ (bad-whitespace)
-C:949, 0: Exactly one space required after comma
-            unsuccessful = subprocess.check_call(command,shell=True)
-                                                        ^ (bad-whitespace)
-C:  1, 0: Missing module docstring (missing-docstring)
-C: 25, 0: Multiple imports on one line (platform, os, shutil, sys, codecs, subprocess, time, re, json, textwrap) (multiple-imports)
-W: 27, 0: Wildcard import send_key (wildcard-import)
-C: 30, 0: Import "from gi.repository import GObject, Gst, Gtk" should be placed at the top of the module (wrong-import-position)
-W: 35, 0: String statement has no effect (pointless-string-statement)
-C: 36, 0: Invalid constant name "appname" (invalid-name)
-C: 37, 0: Invalid constant name "refdir" (invalid-name)
-C: 38, 0: Invalid constant name "gtk" (invalid-name)
-C: 42, 0: Invalid constant name "loglvl" (invalid-name)
-C: 43, 0: Invalid constant name "python3_deps" (invalid-name)
-C: 44, 0: Invalid constant name "sphinx_deps" (invalid-name)
-C: 45, 0: Invalid constant name "gstreamer1_deps" (invalid-name)
-C: 46, 0: Invalid constant name "dependencies" (invalid-name)
-C: 47, 0: Invalid constant name "toolkit_dependencies" (invalid-name)
-C: 48, 0: Invalid constant name "refdir" (invalid-name)
-C: 49, 0: Invalid constant name "confdir" (invalid-name)
-C: 56, 0: Invalid constant name "ref_files" (invalid-name)
-C: 63, 0: Invalid constant name "conf_files" (invalid-name)
-R: 75, 0: Too many instance attributes (21/7) (too-many-instance-attributes)
-C: 92, 4: Missing method docstring (missing-docstring)
-W:148,-1: String statement has no effect (pointless-string-statement)
-E:161,28: Undefined variable 'messenger' (undefined-variable)
-W:161,24: Unused variable 'err' (unused-variable)
-R: 92, 4: Too many branches (17/12) (too-many-branches)
-R: 92, 4: Too many statements (51/50) (too-many-statements)
-C:169, 4: Missing method docstring (missing-docstring)
-R:169, 4: Method could be a function (no-self-use)
-C:172, 4: Missing method docstring (missing-docstring)
-W:174, 8: String statement has no effect (pointless-string-statement)
-C:215, 4: Missing method docstring (missing-docstring)
-C:221, 4: Missing method docstring (missing-docstring)
-C:223, 8: Invalid variable name "me" (invalid-name)
-E:229,20: Undefined variable 'commands' (undefined-variable)
-E:231,36: Instance of 'Commands' has no 'iter' member (no-member)
-C:240, 8: Invalid variable name "e" (invalid-name)
-C:241,12: Invalid variable name "no" (invalid-name)
-E:247, 8: Instance of 'int' has no 'pack_start' member (no-member)
-E:250, 8: Instance of 'int' has no 'pack_start' member (no-member)
-E:252,43: Module 'gi.repository.Gtk' has no 'SORT_ASCENDING' member (no-member)
-E:265, 8: Instance of 'int' has no 'pack_end' member (no-member)
-W:231,12: Unused variable 'command_name' (unused-variable)
-C:271, 4: Invalid argument name "me" (invalid-name)
-E:275,36: Instance of 'Commands' has no 'iter' member (no-member)
-W:271,31: Unused argument 'event' (unused-argument)
-C:280, 4: Missing method docstring (missing-docstring)
-W:282,12: String statement has no effect (pointless-string-statement)
-C:283,83: Invalid variable name "f" (invalid-name)
-C:285, 8: Invalid variable name "e" (invalid-name)
-C:286,12: Invalid variable name "no" (invalid-name)
-C:289, 4: Invalid argument name "me" (invalid-name)
-E:303,16: Instance of 'FreeSpeech' has no 'write_prefs' member (no-member)
-E:321,36: Instance of 'Commands' has no 'iter' member (no-member)
-C:326, 8: Invalid variable name "me" (invalid-name)
-W:324,28: Unused argument 'argument' (unused-argument)
-E:343,12: Undefined variable 'commands' (undefined-variable)
-W:336,30: Unused argument 'bus' (unused-argument)
-W:367, 8: String statement has no effect (pointless-string-statement)
-C:402,85: Invalid variable name "f" (invalid-name)
-C:406, 8: Invalid variable name "e" (invalid-name)
-C:409, 8: Invalid variable name "e" (invalid-name)
-C:426, 8: Invalid variable name "e" (invalid-name)
+C:968, 0: Line too long (108/100) (line-too-long)
+C:970, 0: Line too long (119/100) (line-too-long)
+C:971, 0: Line too long (103/100) (line-too-long)
+C:972, 0: Line too long (123/100) (line-too-long)
+W:974, 0: Bad indentation. Found 16 spaces, expected 12 (bad-indentation)
+C:976, 0: Line too long (103/100) (line-too-long)
+C:982, 0: Line too long (136/100) (line-too-long)
+C:988, 0: Line too long (110/100) (line-too-long)
+C:994, 0: Line too long (118/100) (line-too-long)
+C:1000, 0: Line too long (129/100) (line-too-long)
+C:1003, 0: Line too long (111/100) (line-too-long)
+C:1007, 0: Line too long (174/100) (line-too-long)
+C:1012, 0: Line too long (115/100) (line-too-long)
+C:1013, 0: Line too long (128/100) (line-too-long)
+C:1016, 0: Line too long (151/100) (line-too-long)
+C:1020, 0: Line too long (164/100) (line-too-long)
+C:1038, 0: Line too long (160/100) (line-too-long)
+C:1042, 0: Line too long (160/100) (line-too-long)
+C:  1, 0: Too many lines in module (1070/1000) (too-many-lines)
+C: 48, 0: Import "from gi.repository import GObject, Gtk" should be placed at the top of the module (wrong-import-position)
+W: 51, 0: Wildcard import send_key (wildcard-import)
+C: 51, 0: Import "from send_key import *" should be placed at the top of the module (wrong-import-position)
+C: 61, 0: Invalid constant name "loglvl" (invalid-name)
+C: 62, 0: Invalid constant name "refdir" (invalid-name)
+C: 63, 0: Invalid constant name "confdir" (invalid-name)
+C: 64, 0: Invalid constant name "pocketsphinx_files_dir" (invalid-name)
+C: 71, 0: Invalid constant name "ref_files" (invalid-name)
+C: 79, 0: Invalid constant name "conf_files" (invalid-name)
+R: 91, 0: Too many instance attributes (24/7) (too-many-instance-attributes)
+C:111, 4: Missing method docstring (missing-docstring)
+E:134,44: Too many positional arguments for function call (too-many-function-args)
+C:170, 4: Missing method docstring (missing-docstring)
+C:178,16: Invalid variable name "ENGINE_" (invalid-name)
+W:178,16: Unused variable 'ENGINE_' (unused-variable)
+R:179, 4: Method could be a function (no-self-use)
+C:194, 4: Missing method docstring (missing-docstring)
+C:237, 4: Missing method docstring (missing-docstring)
+C:243, 4: Missing method docstring (missing-docstring)
+W:265,15: Catching too general exception Exception (broad-except)
+C:265, 8: Invalid variable name "e" (invalid-name)
+C:299, 8: Invalid variable name "me" (invalid-name)
+E:312, 8: Instance of 'int' has no 'pack_start' member (no-member)
+E:315, 8: Instance of 'int' has no 'pack_start' member (no-member)
+W:326,38: Use of eval (eval-used)
+E:334, 8: Instance of 'int' has no 'pack_end' member (no-member)
+C:340, 4: Invalid argument name "me" (invalid-name)
+W:340,31: Unused argument 'event' (unused-argument)
+W:354,15: Catching too general exception Exception (broad-except)
+C:352,83: Invalid variable name "f" (invalid-name)
+C:354, 8: Invalid variable name "e" (invalid-name)
+C:355,12: Invalid variable name "no" (invalid-name)
+W:362,15: Catching too general exception Exception (broad-except)
+C:359,83: Invalid variable name "f" (invalid-name)
+C:360,30: Consider iterating the dictionary directly instead of calling .keys() (consider-iterating-dictionary)
+C:362, 8: Invalid variable name "e" (invalid-name)
+C:363,12: Invalid variable name "no" (invalid-name)
+C:367, 4: Missing method docstring (missing-docstring)
+C:370,83: Invalid variable name "f" (invalid-name)
+C:372, 8: Invalid variable name "e" (invalid-name)
+C:373,12: Invalid variable name "no" (invalid-name)
+C:377, 4: Invalid argument name "me" (invalid-name)
+C:409, 8: Invalid variable name "me" (invalid-name)
+W:407,28: Unused argument 'argument' (unused-argument)
+E:424,17: Argument 'corpus' passed by position and keyword in method call (redundant-keyword-arg)
+E:425,21: Argument 'txt' passed by position and keyword in method call (redundant-keyword-arg)
+C:430,85: Invalid variable name "f" (invalid-name)
 C:434, 8: Invalid variable name "e" (invalid-name)
-C:445, 8: Invalid variable name "e" (invalid-name)
-W:389,30: Unused argument 'button' (unused-argument)
-C:463,80: Invalid variable name "f" (invalid-name)
-C:483,80: Invalid variable name "f" (invalid-name)
-C:489, 8: Invalid variable name "me" (invalid-name)
-R:504, 4: Method could be a function (no-self-use)
-W:518,22: Unused argument 'textbuf' (unused-argument)
-C:526, 4: Missing method docstring (missing-docstring)
-W:526,37: Unused argument 'itera' (unused-argument)
-W:526,50: Unused argument 'length' (unused-argument)
-C:535, 4: Missing method docstring (missing-docstring)
-C:570, 4: Missing method docstring (missing-docstring)
-R:570, 4: Method could be a function (no-self-use)
-R:570, 4: Too many statements (51/50) (too-many-statements)
-C:625, 4: Missing method docstring (missing-docstring)
-W:639,16: No exception type(s) specified (bare-except)
-E:669,40: Using variable 'hyp' before assignment (used-before-assignment)
-E:672,36: Instance of 'Commands' has no 'iter' member (no-member)
-E:676,16: Undefined variable 'commands' (undefined-variable)
-W:672,12: Unused variable 'command_name' (unused-variable)
-W:661,39: Unused argument 'confidence' (unused-argument)
-W:684, 4: String statement has no effect (pointless-string-statement)
-C:710,15: Comparison should be search_back == None (misplaced-comparison-constant)
-C:710,15: Comparison to None should be 'expr is None' (singleton-comparison)
-C:727,15: Comparison should be search_back == None (misplaced-comparison-constant)
-C:727,15: Comparison to None should be 'expr is None' (singleton-comparison)
-C:739,11: Comparison should be search_back == None (misplaced-comparison-constant)
-C:739,11: Comparison to None should be 'expr is None' (singleton-comparison)
-C:750, 4: Invalid argument name "a" (invalid-name)
-C:750, 4: Invalid argument name "b" (invalid-name)
-C:750, 4: Invalid argument name "c" (invalid-name)
-C:750, 4: Invalid argument name "d" (invalid-name)
-C:750, 4: Missing method docstring (missing-docstring)
-W:750,30: Unused argument 'c' (unused-argument)
-W:750,24: Unused argument 'a' (unused-argument)
-W:750,27: Unused argument 'b' (unused-argument)
-W:750,33: Unused argument 'd' (unused-argument)
-C:764,20: Invalid variable name "b" (invalid-name)
-W:753,26: Unused argument 'command' (unused-argument)
-C:780,11: Comparison should be search_back == None (misplaced-comparison-constant)
-C:780,11: Comparison to None should be 'expr is None' (singleton-comparison)
-C:783,11: Comparison should be search_back == None (misplaced-comparison-constant)
-C:783,11: Comparison to None should be 'expr is None' (singleton-comparison)
-R:777, 4: Method could be a function (no-self-use)
-W:462,12: Attribute 'open_filename' defined outside __init__ (attribute-defined-outside-init)
-W:471, 8: Attribute 'open_filename' defined outside __init__ (attribute-defined-outside-init)
-W:479,16: Attribute 'open_filename' defined outside __init__ (attribute-defined-outside-init)
-W:688, 8: Attribute 'open_filename' defined outside __init__ (attribute-defined-outside-init)
-W:284,16: Attribute 'cmds' defined outside __init__ (attribute-defined-outside-init)
-W:301,16: Attribute 'cmds' defined outside __init__ (attribute-defined-outside-init)
-W:627, 8: Attribute 'bounds' defined outside __init__ (attribute-defined-outside-init)
-W:667, 8: Attribute 'bounds' defined outside __init__ (attribute-defined-outside-init)
-W:755, 8: Attribute 'bounds' defined outside __init__ (attribute-defined-outside-init)
-W:327, 8: Attribute 'commands_old' defined outside __init__ (attribute-defined-outside-init)
-W:490, 8: Attribute 'commands_old' defined outside __init__ (attribute-defined-outside-init)
-W:690, 8: Attribute 'undo' defined outside __init__ (attribute-defined-outside-init)
-R: 75, 0: Too many public methods (37/20) (too-many-public-methods)
-C:845, 8: Invalid attribute name "dialogFlags" (invalid-name)
-E:811, 8: Instance of 'int' has no 'pack_start' member (no-member)
-W:801, 8: Unused variable 'freespeech' (unused-variable)
-W:814, 4: Arguments number differs from overridden 'show' method (arguments-differ)
-E:818,12: Undefined variable 'freespeech' (undefined-variable)
-E:828,12: Undefined variable 'set_defaults' (undefined-variable)
-W:829, 4: Arguments number differs from overridden 'run' method (arguments-differ)
+C:437, 8: Invalid variable name "e" (invalid-name)
+C:457, 8: Invalid variable name "e" (invalid-name)
+C:467, 8: Invalid variable name "e" (invalid-name)
+C:480, 8: Invalid variable name "e" (invalid-name)
+W:415,30: Unused argument 'button' (unused-argument)
+C:490, 4: Missing method docstring (missing-docstring)
+C:491,26: Invalid variable name "m" (invalid-name)
+C:501,80: Invalid variable name "f" (invalid-name)
+C:521,80: Invalid variable name "f" (invalid-name)
+C:527, 8: Invalid variable name "me" (invalid-name)
+R:542, 4: Method could be a function (no-self-use)
+C:568, 4: Missing method docstring (missing-docstring)
+W:568,37: Unused argument 'itera' (unused-argument)
+W:568,50: Unused argument 'length' (unused-argument)
+C:577, 4: Missing method docstring (missing-docstring)
+E:613, 4: Method should have "self" as first argument (no-self-argument)
+E:667,12: Value 'corpus' is unsubscriptable (unsubscriptable-object)
+R:613, 4: Too many statements (51/50) (too-many-statements)
+C:670, 4: Missing method docstring (missing-docstring)
+E:670, 4: Method should have "self" as first argument (no-self-argument)
+E:671, 8: Instance of 'FreeSpeech' has no 'begin_user_action' member (no-member)
+E:672,15: Instance of 'FreeSpeech' has no 'get_text' member (no-member)
+W:683,16: No exception type(s) specified (bare-except)
+C:701, 4: Missing method docstring (missing-docstring)
+C:714, 4: Missing method docstring (missing-docstring)
+W:730, 8: Unused variable 'err' (unused-variable)
+R:714, 4: Method could be a function (no-self-use)
+W:735,27: Unused argument 'wreck' (unused-argument)
+C:764, 4: Missing method docstring (missing-docstring)
+W:768,19: Use of eval (eval-used)
+C:796,15: Comparison should be search_back == None (misplaced-comparison-constant)
+C:796,15: Comparison to None should be 'expr is None' (singleton-comparison)
+C:813,15: Comparison should be search_back == None (misplaced-comparison-constant)
+C:813,15: Comparison to None should be 'expr is None' (singleton-comparison)
+C:825,11: Comparison should be search_back == None (misplaced-comparison-constant)
+C:825,11: Comparison to None should be 'expr is None' (singleton-comparison)
+C:836, 4: Invalid argument name "a" (invalid-name)
+C:836, 4: Invalid argument name "b" (invalid-name)
+C:836, 4: Invalid argument name "c" (invalid-name)
+C:836, 4: Invalid argument name "d" (invalid-name)
 C:836, 4: Missing method docstring (missing-docstring)
-E:837, 8: Undefined variable 'set_title' (undefined-variable)
-E:838, 8: Undefined variable 'set_flags' (undefined-variable)
-E:839, 8: Undefined variable 'set_buttons' (undefined-variable)
-R:836, 4: Method could be a function (no-self-use)
-W:840, 4: Arguments number differs from overridden 'set_title' method (arguments-differ)
-C:842, 4: Missing method docstring (missing-docstring)
-C:844, 4: Missing method docstring (missing-docstring)
-W:846, 4: Arguments number differs from overridden 'set_parent' method (arguments-differ)
-W:848, 4: Arguments number differs from overridden 'get_title' method (arguments-differ)
-C:850, 4: Missing method docstring (missing-docstring)
-C:852, 4: Missing method docstring (missing-docstring)
-E:882,19: Undefined variable 'load_commands' (undefined-variable)
-W:882, 8: Unused variable 'cmd_list' (unused-variable)
-C:885, 4: Missing method docstring (missing-docstring)
-R:885, 4: Too many arguments (7/5) (too-many-arguments)
-R:886,11: Too many boolean expressions in if statement (6/5) (too-many-boolean-expressions)
-E:887,12: Undefined variable 'freespeech' (undefined-variable)
-E:888,29: Undefined variable 'cmd_types' (undefined-variable)
-E:889,12: Undefined variable 'freespeech' (undefined-variable)
-C:901, 4: Missing method docstring (missing-docstring)
-E:912,16: Undefined variable 'load_commands' (undefined-variable)
-E:914,16: Undefined variable 'parent' (undefined-variable)
-E:914,100: Undefined variable 'parent' (undefined-variable)
-R:901, 4: Method could be a function (no-self-use)
-E:926,28: Undefined variable 'cmd_list' (undefined-variable)
-W:926,12: Unused variable 'cmd_name' (unused-variable)
-C:928, 4: Missing method docstring (missing-docstring)
-C:930,12: Invalid variable name "c" (invalid-name)
-C:930,14: Invalid variable name "d" (invalid-name)
-E:930,19: Undefined variable 'quick_ref' (undefined-variable)
-E:933,16: Undefined variable 'find_cmd' (undefined-variable)
-C:935,11: Comparison to False should be 'not expr' or 'expr is False' (singleton-comparison)
-E:936,12: Undefined variable 'command_not_found' (undefined-variable)
-W:928,30: Unused argument 'confidence' (unused-argument)
-R:928, 4: Method could be a function (no-self-use)
-C:938, 4: Missing method docstring (missing-docstring)
-E:939,19: Undefined variable 'cmd_list' (undefined-variable)
-E:941,16: Undefined variable 'execute' (undefined-variable)
-R:938, 4: Method could be a function (no-self-use)
-C:943, 4: Missing method docstring (missing-docstring)
-W:945,12: Use of exec (exec-used)
-W:951,16: Statement seems to have no effect (pointless-statement)
-E:959,12: Undefined variable 'metacommmand' (undefined-variable)
-W:961,12: Statement seems to have no effect (pointless-statement)
-E:961,12: Undefined variable 'command_type_not_found' (undefined-variable)
-C:962, 4: Missing method docstring (missing-docstring)
-E:962, 4: Method has no argument (no-method-argument)
-C:964, 4: Missing method docstring (missing-docstring)
-E:964, 4: Method has no argument (no-method-argument)
-C:967, 4: Missing method docstring (missing-docstring)
-E:967, 4: Method should have "self" as first argument (no-self-argument)
-W:968, 8: Use of eval (eval-used)
-C:970, 4: Invalid constant name "app" (invalid-name)
-W: 27, 0: Unused import Xlib from wildcard import (unused-wildcard-import)
-W: 27, 0: Unused import special_X_keysyms from wildcard import (unused-wildcard-import)
-W: 27, 0: Unused import argp from wildcard import (unused-wildcard-import)
-W: 27, 0: Unused import is_shifted from wildcard import (unused-wildcard-import)
-W: 27, 0: Unused import get_keysym from wildcard import (unused-wildcard-import)
-W: 27, 0: Unused import char_to_keycode from wildcard import (unused-wildcard-import)
-W: 27, 0: Unused import window from wildcard import (unused-wildcard-import)
-W: 27, 0: Unused import UseXTest from wildcard import (unused-wildcard-import)
-C: 30, 0: Imports from package gi are not grouped (ungrouped-imports)
+W:836,33: Unused argument 'd' (unused-argument)
+W:836,24: Unused argument 'a' (unused-argument)
+W:836,27: Unused argument 'b' (unused-argument)
+W:836,30: Unused argument 'c' (unused-argument)
+C:850,20: Invalid variable name "b" (invalid-name)
+W:839,27: Unused argument 'command' (unused-argument)
+C:866,11: Comparison should be search_back == None (misplaced-comparison-constant)
+C:866,11: Comparison to None should be 'expr is None' (singleton-comparison)
+C:869,11: Comparison should be search_back == None (misplaced-comparison-constant)
+C:869,11: Comparison to None should be 'expr is None' (singleton-comparison)
+R:863, 4: Method could be a function (no-self-use)
+R: 91, 0: Too many public methods (43/20) (too-many-public-methods)
+W:745, 8: Attribute 'bounds' defined outside __init__ (attribute-defined-outside-init)
+W:841, 8: Attribute 'bounds' defined outside __init__ (attribute-defined-outside-init)
+W:299,13: Attribute 'prefsdialog' defined outside __init__ (attribute-defined-outside-init)
+W:371,16: Attribute 'cmds' defined outside __init__ (attribute-defined-outside-init)
+W:389,16: Attribute 'cmds' defined outside __init__ (attribute-defined-outside-init)
+W:776, 8: Attribute 'undo' defined outside __init__ (attribute-defined-outside-init)
+W:244, 8: Attribute 'commands' defined outside __init__ (attribute-defined-outside-init)
+W:493, 8: Attribute 'stop_listening' defined outside __init__ (attribute-defined-outside-init)
+W:500,12: Attribute 'open_filename' defined outside __init__ (attribute-defined-outside-init)
+W:509, 8: Attribute 'open_filename' defined outside __init__ (attribute-defined-outside-init)
+W:517,16: Attribute 'open_filename' defined outside __init__ (attribute-defined-outside-init)
+W:774, 8: Attribute 'open_filename' defined outside __init__ (attribute-defined-outside-init)
+W:337, 8: Attribute 'commands_old' defined outside __init__ (attribute-defined-outside-init)
+W:410, 8: Attribute 'commands_old' defined outside __init__ (attribute-defined-outside-init)
+W:528, 8: Attribute 'commands_old' defined outside __init__ (attribute-defined-outside-init)
+C:928, 8: Invalid attribute name "dialogFlags" (invalid-name)
+E:899, 8: Instance of 'int' has no 'pack_start' member (no-member)
+C:902, 4: Missing method docstring (missing-docstring)
+C:919, 4: Missing method docstring (missing-docstring)
+W:923, 4: Arguments number differs from overridden 'set_title' method (arguments-differ)
+C:925, 4: Missing method docstring (missing-docstring)
+C:927, 4: Missing method docstring (missing-docstring)
+W:929, 4: Arguments number differs from overridden 'set_parent' method (arguments-differ)
+W:931, 4: Arguments number differs from overridden 'get_title' method (arguments-differ)
+C:933, 4: Missing method docstring (missing-docstring)
+C:935, 4: Missing method docstring (missing-docstring)
+W:938, 0: Method '__enter__' is abstract in class 'AudioSource' but is not overridden (abstract-method)
+W:938, 0: Method '__exit__' is abstract in class 'AudioSource' but is not overridden (abstract-method)
+R:944, 4: Too many arguments (10/5) (too-many-arguments)
+R:944, 4: Too many local variables (27/15) (too-many-locals)
+W:944, 4: Arguments number differs from overridden 'recognize_sphinx' method (arguments-differ)
+E:947,38: Undefined variable 'AudioData' (undefined-variable)
+E:968,18: Undefined variable 'RequestError' (undefined-variable)
+E:970,18: Undefined variable 'RequestError' (undefined-variable)
+E:972,18: Undefined variable 'RequestError' (undefined-variable)
+E:976,18: Undefined variable 'RequestError' (undefined-variable)
+E:982,18: Undefined variable 'RequestError' (undefined-variable)
+E:988,18: Undefined variable 'RequestError' (undefined-variable)
+E:990,38: Undefined variable 'CONF_FILES' (undefined-variable)
+E:994,18: Undefined variable 'RequestError' (undefined-variable)
+E:1011,17: Undefined variable 'PortableNamedTemporaryFile' (undefined-variable)
+C:1011,52: Invalid variable name "f" (invalid-name)
+C:1045,21: More than one statement on a single line (multiple-statements)
+C:1049,35: More than one statement on a single line (multiple-statements)
+E:1050,14: Undefined variable 'UnknownValueError' (undefined-variable)
+R:944, 4: Too many branches (22/12) (too-many-branches)
+R:944, 4: Too many statements (81/50) (too-many-statements)
+C:1051, 0: Missing class docstring (missing-docstring)
+R:1051, 0: Too few public methods (1/2) (too-few-public-methods)
+C:1069, 4: Invalid constant name "app" (invalid-name)
+W: 45, 0: Unused import time (unused-import)
+W: 51, 0: Unused import UseXTest from wildcard import (unused-wildcard-import)
+W: 51, 0: Unused import argp from wildcard import (unused-wildcard-import)
+W: 51, 0: Unused import Xlib from wildcard import (unused-wildcard-import)
+W: 51, 0: Unused import get_keysym from wildcard import (unused-wildcard-import)
+W: 51, 0: Unused import is_shifted from wildcard import (unused-wildcard-import)
+W: 51, 0: Unused import special_X_keysyms from wildcard import (unused-wildcard-import)
+W: 51, 0: Unused import window from wildcard import (unused-wildcard-import)
+W: 51, 0: Unused import char_to_keycode from wildcard import (unused-wildcard-import)
+C: 45, 0: standard import "import subprocess, sys, textwrap, time" comes before "import codecs, json, os, platform, re, shutil, speech_recognition" (wrong-import-order)
+C: 45, 0: standard import "import subprocess, sys, textwrap, time" comes before "import codecs, json, os, platform, re, shutil, speech_recognition" (wrong-import-order)
+C: 45, 0: standard import "import subprocess, sys, textwrap, time" comes before "import codecs, json, os, platform, re, shutil, speech_recognition" (wrong-import-order)
+C: 45, 0: standard import "import subprocess, sys, textwrap, time" comes before "import codecs, json, os, platform, re, shutil, speech_recognition" (wrong-import-order)
 
 
 Report
 ======
-661 statements analysed.
+691 statements analysed.
 
 Statistics by type
 ------------------
@@ -1032,11 +695,11 @@ Statistics by type
 +---------+-------+-----------+-----------+------------+---------+
 |type     |number |old number |difference |%documented |%badname |
 +=========+=======+===========+===========+============+=========+
-|module   |1      |1          |=          |0.00        |0.00     |
+|module   |1      |1          |=          |100.00      |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|class    |3      |3          |=          |100.00      |0.00     |
+|class    |4      |3          |+1.00      |75.00       |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
-|method   |59     |58         |+1.00      |59.32       |0.00     |
+|method   |58     |54         |+4.00      |65.52       |0.00     |
 +---------+-------+-----------+-----------+------------+---------+
 |function |0      |0          |=          |0           |0        |
 +---------+-------+-----------+-----------+------------+---------+
@@ -1049,6 +712,9 @@ External dependencies
 
     gi (freespeech)
       \-repository (freespeech)
+    pocketsphinx (freespeech)
+      \-pocketsphinx (freespeech)
+    speech_recognition (freespeech)
 
 
 
@@ -1058,13 +724,13 @@ Raw metrics
 +----------+-------+------+---------+-----------+
 |type      |number |%     |previous |difference |
 +==========+=======+======+=========+===========+
-|code      |687    |70.46 |685      |+2.00      |
+|code      |784    |72.86 |654      |+130.00    |
 +----------+-------+------+---------+-----------+
-|docstring |100    |10.26 |99       |+1.00      |
+|docstring |145    |13.48 |92       |+53.00     |
 +----------+-------+------+---------+-----------+
-|comment   |129    |13.23 |124      |+5.00      |
+|comment   |88     |8.18  |90       |-2.00      |
 +----------+-------+------+---------+-----------+
-|empty     |59     |6.05  |61       |-2.00      |
+|empty     |59     |5.48  |52       |+7.00      |
 +----------+-------+------+---------+-----------+
 
 
@@ -1088,13 +754,13 @@ Messages by category
 +-----------+-------+---------+-----------+
 |type       |number |previous |difference |
 +===========+=======+=========+===========+
-|convention |401    |418      |-17.00     |
+|convention |264    |279      |-15.00     |
 +-----------+-------+---------+-----------+
-|refactor   |15     |17       |-2.00      |
+|refactor   |12     |7        |+5.00      |
 +-----------+-------+---------+-----------+
-|warning    |59     |55       |+4.00      |
+|warning    |53     |49       |+4.00      |
 +-----------+-------+---------+-----------+
-|error      |38     |55       |-17.00     |
+|error      |23     |5        |+18.00     |
 +-----------+-------+---------+-----------+
 
 
@@ -1105,82 +771,86 @@ Messages
 +-------------------------------+------------+
 |message id                     |occurrences |
 +===============================+============+
-|bad-whitespace                 |245         |
+|bad-whitespace                 |166         |
 +-------------------------------+------------+
-|invalid-name                   |40          |
+|invalid-name                   |39          |
 +-------------------------------+------------+
-|line-too-long                  |32          |
+|missing-docstring              |21          |
 +-------------------------------+------------+
-|trailing-whitespace            |29          |
+|line-too-long                  |18          |
 +-------------------------------+------------+
-|missing-docstring              |25          |
+|attribute-defined-outside-init |15          |
 +-------------------------------+------------+
-|undefined-variable             |24          |
+|unused-argument                |11          |
 +-------------------------------+------------+
-|unused-argument                |14          |
-+-------------------------------+------------+
-|attribute-defined-outside-init |12          |
-+-------------------------------+------------+
-|no-member                      |10          |
-+-------------------------------+------------+
-|bad-continuation               |9           |
+|undefined-variable             |11          |
 +-------------------------------+------------+
 |unused-wildcard-import         |8           |
 +-------------------------------+------------+
-|no-self-use                    |8           |
+|no-member                      |6           |
 +-------------------------------+------------+
-|superfluous-parens             |7           |
-+-------------------------------+------------+
-|unused-variable                |6           |
-+-------------------------------+------------+
-|singleton-comparison           |6           |
-+-------------------------------+------------+
-|pointless-string-statement     |6           |
+|singleton-comparison           |5           |
 +-------------------------------+------------+
 |misplaced-comparison-constant  |5           |
 +-------------------------------+------------+
-|arguments-differ               |5           |
+|wrong-import-order             |4           |
++-------------------------------+------------+
+|no-self-use                    |4           |
++-------------------------------+------------+
+|arguments-differ               |4           |
++-------------------------------+------------+
+|broad-except                   |3           |
++-------------------------------+------------+
+|wrong-import-position          |2           |
++-------------------------------+------------+
+|unused-variable                |2           |
 +-------------------------------+------------+
 |too-many-statements            |2           |
 +-------------------------------+------------+
-|pointless-statement            |2           |
+|redundant-keyword-arg          |2           |
 +-------------------------------+------------+
-|no-method-argument             |2           |
+|no-self-argument               |2           |
++-------------------------------+------------+
+|multiple-statements            |2           |
 +-------------------------------+------------+
 |fixme                          |2           |
 +-------------------------------+------------+
-|wrong-import-position          |1           |
+|eval-used                      |2           |
++-------------------------------+------------+
+|abstract-method                |2           |
 +-------------------------------+------------+
 |wildcard-import                |1           |
 +-------------------------------+------------+
-|used-before-assignment         |1           |
+|unused-import                  |1           |
 +-------------------------------+------------+
-|ungrouped-imports              |1           |
+|unsubscriptable-object         |1           |
 +-------------------------------+------------+
 |too-many-public-methods        |1           |
 +-------------------------------+------------+
+|too-many-locals                |1           |
++-------------------------------+------------+
+|too-many-lines                 |1           |
++-------------------------------+------------+
 |too-many-instance-attributes   |1           |
++-------------------------------+------------+
+|too-many-function-args         |1           |
 +-------------------------------+------------+
 |too-many-branches              |1           |
 +-------------------------------+------------+
-|too-many-boolean-expressions   |1           |
-+-------------------------------+------------+
 |too-many-arguments             |1           |
 +-------------------------------+------------+
-|no-self-argument               |1           |
+|too-few-public-methods         |1           |
 +-------------------------------+------------+
-|multiple-imports               |1           |
-+-------------------------------+------------+
-|exec-used                      |1           |
-+-------------------------------+------------+
-|eval-used                      |1           |
+|consider-iterating-dictionary  |1           |
 +-------------------------------+------------+
 |bare-except                    |1           |
++-------------------------------+------------+
+|bad-indentation                |1           |
 +-------------------------------+------------+
 
 
 
 Global evaluation
 -----------------
-Your code has been rated at -0.06/10 (previous run: -1.61/10, +1.55)
+Your code has been rated at 3.57/10 (previous run: 3.99/10, -0.42)
 
