@@ -41,7 +41,7 @@ this)
 
 """
 
-import codecs, json, os, platform, re, shutil, speech_recognition
+import codecs, dominate, json, os, platform, re, shutil, speech_recognition
 import subprocess, sys, textwrap, time
 import gi
 gi.require_version('Gtk', '3.0')
@@ -53,15 +53,16 @@ GObject.threads_init()
 # removing gstreamer dependency
 
 """ global variables """
-APPNAME = 'FreeSpeech'
-ENGINE = 'pocketsphinx'
+APPNAME                 = 'FreeSpeech'
+SHORT_DESC              = 'Continuous engine-independent realtime speech recognition'
+ENGINE                  = 'pocketsphinx'
 SUCCESSFULLY, ERROR, SUBPROCESS_FAILURE = 0, 1, 2
-LOW, NORMAL, HIGH, FATAL = 0, 1, 2, 3
-LOG, DEBUG, WARN = 0, 3, 4 # ERROR and SUBPROCESS_FAILURE were already set as exit codes.
-loglvl = [ "LOG", "ERROR", "SUBPROCESS_MESSAGE", "DEBUG", "WARN" ]
-refdir  = os.path.join("/", "usr", "share", "freespeech")
-confdir = os.path.join("/", "etc", "freespeech")
-pocketsphinx_files_dir = os.path.join(refdir, 'pocketsphinx-data', 'en-US')
+LOW, NORMAL, HIGH, FATAL= 0, 1, 2, 3
+LOG, DEBUG, WARN        = 0, 3, 4 # ERROR and SUBPROCESS_FAILURE were already set as exit codes.
+loglvl                  = [ "LOG", "ERROR", "SUBPROCESS_MESSAGE", "DEBUG", "WARN" ]
+refdir                  = os.path.join("/", "usr", "share", "freespeech")
+confdir                 = os.path.join("/", "etc", "freespeech")
+pocketsphinx_files_dir  = os.path.join(refdir, 'pocketsphinx-data', 'en-US')
 # note refdir will have to be redefined if the system is Windows, as Windows doesn't have an /etc
 # perhaps the Windows dev could create an installer which creates a C:\Program Files\FreeSpeech\
 # and put it in there.
@@ -87,6 +88,10 @@ conf_files={
     "dic"       : os.path.join(confdir, 'custom.dic')
 }
 
+def _undent_(text):
+    """ shortcut for str(textwrap.dedent())"""
+    assert isinstance(text, str), "Text to be un-indented must be a string! Received: " + str(text)
+    return str(textwrap.dedent(text))
 
 class FreeSpeech(object):
     """PyGTK continuous speech recognition scratchpad"""
@@ -105,9 +110,10 @@ class FreeSpeech(object):
         self.ttext = ""
         self.init_gui()
         self.err.set_parent(self)
-        #self.init_prefs()
+        self.init_prefs()
         self.init_file_chooser()
         self.start_listening()
+        #self.interface = Interface()
     def prereqs(self):
         # place to store the currently open file name, if any
         self.check_args()
@@ -131,9 +137,9 @@ class FreeSpeech(object):
                         "Uncaught error creating /usr/tmp. Does it exist? Is it writable?", ERROR)
                     exit(ERROR)
             except OSError:
-                self.logger.log_message(str(textwrap.dedent("\
+                self.logger.log_message(_undent_("\
                     You do not have a /usr/tmp folder or it is not writable. Attempts to resolve\
-                    this have failed.", ERROR)))
+                    this have failed.", ERROR))
                 exit(SUBPROCESS_FAILURE)
         # Removed jack dependency.
     def check_dir(self, directory):
@@ -177,20 +183,23 @@ class FreeSpeech(object):
             if arg is ("-e" or "--engine"):
                 ENGINE_ = sys.argv[i+1]
     def display_help(self):
-        """ diplays a basic list of command line options."""
-        print(str(textwrap.dedent("\
-            FreeSpeech -- continuous engine-independent speech recognition text editor\
-            \
-            FreeSpeech is a GUI application that can be launched without a command line\
-            for basic offline functionality. However, if you wish to use custom options\
-            (like a custom recognition engine), you can run it from the command line with\
-            the following flags:\
-                -h      --help          Shows this help text\
-                -e [?]  --engine [?]    Used to select a recognition engine. Available\
-                    options:\
-                        pocketsphinx    CMU sphinx\
-                        gv              Google voice\
-                        more options TODO")))
+        """ diplays a basic list of command line options. In this case we can assume this
+            was run from the CLI and just use print, rather than the more generic Logger()
+            which is there to allow easy conversion to logfiles rather than stdout logging
+        """
+        print(_undent_("""
+            FreeSpeech -- continuous engine-independent speech recognition text editor
+
+            FreeSpeech is a GUI application that can be launched without a command line
+            for basic offline functionality. However, if you wish to use custom options
+            (like a custom recognition engine), you can run it from the command line with
+            the following flags:
+                -h      --help          Shows this help text
+                -e [?]  --engine [?]    Used to select a recognition engine. Available
+                    options:
+                        pocketsphinx    CMU sphinx
+                        gv              Google voice
+                        more options TODO"""))
     def init_gui(self):
         self.undo = [] # Say "Scratch that" or "Undo that"
         """Initialize the GUI components"""
@@ -207,10 +216,10 @@ class FreeSpeech(object):
         vbox = Gtk.VBox()
         hbox = Gtk.HBox(homogeneous=False)
         self.text = Gtk.TextView()
-        self.accel = Gtk.AccelGroup()
+        self.undo_accel = Gtk.AccelGroup()
         accel_key, accel_mods = Gtk.accelerator_parse("<Ctrl>z")
-        self.accel.connect(accel_key, accel_mods, 0, self.doscratch)
-        self.window.add_accel_group(self.accel)
+        self.undo_accel.connect(accel_key, accel_mods, 0, self.doscratch)
+        self.window.add_accel_group(self.undo_accel)
         self.textbuf = self.text.get_buffer()
         self.textbuf.connect("insert-text", self.text_inserted)
         self.text.set_wrap_mode(Gtk.WrapMode.WORD)
@@ -219,26 +228,26 @@ class FreeSpeech(object):
         self.scroller.add(self.text)
         vbox.pack_start(self.scroller, True, True, 5)
         vbox.pack_end(hbox, False, False, False)
-        self.button0 = Gtk.Button("Learn")
-        self.button0.connect('clicked', self.learn_new_words)
-        self.button1 = Gtk.ToggleButton("Send keys")
-        self.button1.connect('clicked', self.toggle_echo)
-        #self.button2 = Gtk.Button("Show commands")
-        #self.button2.connect('clicked', self.show_commands)
-        self.button3 = Gtk.ToggleButton("Mute")
-        self.button3.connect('clicked', self.mute)
-        hbox.pack_start(self.button0, True, False, 0)
-        hbox.pack_start(self.button1, True, False, 0)
-        #hbox.pack_start(self.button2, True, False, 0)
-        hbox.pack_start(self.button3, True, False, 0)
+        self.learn_button = Gtk.Button("Learn")
+        self.learn_button.connect('clicked', self.learn_new_words)
+        self.echo_keys_button = Gtk.ToggleButton("Send keys")
+        self.echo_keys_button.connect('clicked', self.toggle_echo)
+        #self.prefs_dialog_button = Gtk.Button("Show commands")
+        #self.prefs_dialog_button.connect('clicked', self.show_commands)
+        self.kill_mike_button = Gtk.ToggleButton("Mute")
+        self.kill_mike_button.connect('clicked', self.mute)
+        hbox.pack_start(self.learn_button, True, False, 0)
+        hbox.pack_start(self.echo_keys_button, True, False, 0)
+        #hbox.pack_start(self.prefs_dialog_button, True, False, 0)
+        hbox.pack_start(self.kill_mike_button, True, False, 0)
         self.window.add(vbox)
         self.window.show_all()
 
     def init_file_chooser(self):
         self.file_chooser = Gtk.FileChooserDialog(title="File Chooser",
-        parent=self.window, action=Gtk.FileChooserAction.OPEN,
-        buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
-             Gtk.STOCK_OK, Gtk.ResponseType.OK))
+            parent=self.window, action=Gtk.FileChooserAction.OPEN,
+            buttons=(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+              Gtk.STOCK_OK, Gtk.ResponseType.OK))
 
     def init_commands(self):
         self.commands = {'file quit': 'Gtk.main_quit',
@@ -265,77 +274,50 @@ class FreeSpeech(object):
         except Exception as e:
             print(str(e.args), "in freespeech.init_commands()")
 
-        """
-        This section was used to implement the preferences dialog with a more complex data structure
-        that allowed for separate training phrases and a specified regex for the command. I like
-        that data structure so I'm leaving this here in case I decide to come back to it.
-
-        self.commands = Commands()  # The object created by commands.py that acts upon the Commnds
-        me = self.prefsdialog = gtk.Dialog("Command Preferences", None,
-            0,  # In previous versions of Gtk this was Gtk.DIALOG_DESTROY_WITH_PARENT, but
-            #in the current version of Gtk that is invalid. The first result on DuckDuckGo
-            # suggtests passing 0 directly, so lets see what happens then...
-            (gtk.STOCK_CANCEL, gtk.ResponseType.REJECT,
-            gtk.STOCK_OK, gtk.ResponseType.ACCEPT))
-        self.cmds = commands.load_commands() # cmds becomes the data structure of the literal commands
-        cmd_text = []
-        for command_name,command in self.cmds.iter():
-            for phrase in command["training_phrases"]:
-                cmd_text.append("<s> " + phrase + " </s>")
-#   apparently pocketsphinx parses phrases to add to the dictionary by reading
-#   them from XML <s> tags.
-        try:
-            with open(conf_files["cmdtext"], encoding='utf-8', mode='w') as txtfile:
-                for text in cmd_text:
-                    txtfile.write(text)
-        except OSError as e:
-            no,msg = e.args
-            self.err.show(errormsg= no + ": " + msg + "\n...Occurred in init_commands()", severity=FATAL)
-        """
-
     def init_prefs(self):
         """ Initialize GUI components for prefs dialog. """
 
-        me = self.prefsdialog = Gtk.Dialog("Command Preferences", self.window,
+        this = self.prefsdialog = Gtk.Dialog("Command Preferences", self.window,
             Gtk.DialogFlags.DESTROY_WITH_PARENT,
             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
             Gtk.STOCK_OK, Gtk.ResponseType.OK))
-        me.set_default_size(200, 300)
+        # "this" is *not* a python keyword, and I like it better than 'me'
+        this.set_default_size(200, 300)
         if not os.access(conf_files['cmdjson'], os.R_OK):
             self.init_commands()
         else:
             self.read_prefs()
 
-        me.label = Gtk.Label( \
-"Double-click to change command wording.\n\
-If new commands don't work click the learn button to train them.")
-        me.vbox.pack_start(me.label, False, False, False)
-        me.checkbox=Gtk.CheckButton("Restore Defaults")
-        me.checkbox.show()
-        me.action_area.pack_start(me.checkbox, False, False, 0)
-        me.liststore=Gtk.ListStore(str, str)
-        me.liststore.set_sort_column_id(0, Gtk.SortType.ASCENDING)
-        me.tree=Gtk.TreeView(me.liststore)
+        this.label = Gtk.Label(_undent_("\
+            Double-click to change command wording.\n\
+            If new commands don't work click the learn button to train them."))
+        this.vbox.pack_start(this.label, False, False, False)
+        this.checkbox=Gtk.CheckButton("Restore Defaults")
+        this.checkbox.show()
+        this.action_area.pack_start(this.checkbox, False, False, 0)
+        this.liststore=Gtk.ListStore(str, str)
+        this.liststore.set_sort_column_id(0, Gtk.SortType.ASCENDING)
+        this.tree=Gtk.TreeView(this.liststore)
         editable = Gtk.CellRendererText()
         fixed = Gtk.CellRendererText()
         editable.set_property('editable', True)
         editable.connect('edited', self.edited_cb)
-        me.connect("activate", self.prefs_expose)
-        me.liststore.clear()
+        this.connect("show", self.prefs_expose)
+        this.liststore.clear()
         for key, value in list(self.commands.items()):
-            me.liststore.append([key, eval(value).__doc__])
-        me.connect("response", self.prefs_response)
-        me.connect("delete_event", self.prefs_response)
+            this.liststore.append([key, eval(value).__doc__])
+        this.connect("response", self.prefs_response)
+        this.connect("delete_event", self.prefs_response)
         column = Gtk.TreeViewColumn("Spoken command",editable,text=0)
         column.set_min_width(200)
-        me.tree.append_column(column)
+        this.tree.append_column(column)
         column = Gtk.TreeViewColumn("What it does",fixed,text=1)
-        me.tree.append_column(column)
-        me.vbox.pack_end(me.tree, False, False, 0)
-        me.label.show()
-        me.tree.show()
-        self.commands_old = self.cmds
-        me.show_all()
+        this.tree.append_column(column)
+        this.vbox.pack_end(this.tree, False, False, 0)
+        this.label.show()
+        this.tree.show()
+        self.commands_old = self.commands
+        this.show_all()
 
     def prefs_expose(self, me, event):
         """ callback when prefs window is shown """
@@ -368,7 +350,7 @@ If new commands don't work click the learn button to train them.")
         try:
             """ read command list from file """
             with codecs.open(conf_files["cmdjson"], encoding='utf-8', mode='r') as f:
-                self.cmds=json.loads(f.read())
+                self.commands=json.loads(f.read())
         except OSError as e:
             no,msg = e.args
             self.err.show(errormsg = no + ": " + msg + "\n...Occurred in read_prefs()",
@@ -553,12 +535,11 @@ If new commands don't work click the learn button to train them.")
 
     def toggle_keys(self):
         """ echo keystrokes to the desktop """
-        self.button1.set_active(True - self.button1.get_active())
+        self.echo_keys_button.set_active(True - self.echo_keys_button.get_active())
         return True
 
-    def time_up(self):
-        """ add changed textbuf to undo buffer
-        so we don't need the textbuf anymore? (removed textbuf arg)' """
+    def time_up(self, textbuf):
+        """ add changed textbuf to undo buffer """
         if self.editing:
             self.editing = False
             self.undo.append(self.ttext)
@@ -751,7 +732,7 @@ If new commands don't work click the learn button to train them.")
             self.textbuf.delete_selection(True, self.text.get_editable())
             self.textbuf.insert_at_cursor(hypothesis)
             # send keystrokes to the desktop?
-            if self.button1.get_active():
+            if self.echo_keys_button.get_active():
                 send_string(hypothesis)
                 display.sync()
             self.logger.log_message(hypothesis + " executed.")
@@ -846,7 +827,7 @@ If new commands don't work click the learn button to train them.")
             if search_back:
                 self.textbuf.select_range(search_back[0], search_back[1])
                 self.textbuf.delete_selection(True, self.text.get_editable())
-                if self.button1.get_active():
+                if self.echo_keys_button.get_active():
                     b = "".join(["\b" for x in range(0,len(scratch))])
                     send_string(b)
                     display.sync()
@@ -855,7 +836,7 @@ If new commands don't work click the learn button to train them.")
     def new_paragraph(self):
         """ start a new paragraph """
         self.textbuf.insert_at_cursor('\n')
-        if self.button1.get_active():
+        if self.echo_keys_button.get_active():
             send_string("\n")
             display.sync()
         return True # command completed successfully!
@@ -957,10 +938,9 @@ class Wreckognizer(speech_recognition.Recognizer):
         assert (isinstance(base_dir, str) or base_dir is None),                                    \
             "base directory path must be formatted as a string"
         assert keyword_entries is None or all(isinstance(keyword, (type(""), type(u'')))           \
-            and 0 <= sensitivity <= 1 for keyword, sensitivity in keyword_entries),                \
-            str(textwrap.dedent("\
+            and 0 <= sensitivity <= 1 for keyword, sensitivity in keyword_entries), _undent_("\
             ``keyword_entries`` must be ``None`` or a list of pairs of strings and numbers between \
-            0 and 1"))
+            0 and 1")
         # Holy crap that's a complicated line ^^
         try:
             from pocketsphinx import pocketsphinx, Jsgf, FsgModel
@@ -1065,6 +1045,25 @@ class LogRecorder():
             below.
         """
         print("FreezePeach: ", self.LOGLVL[level], " -- ", message)
+
+class Interface():
+    def __init__(self):
+        doc = dominate.document(title='FreeSpeech (engine-independent continuous speech recogntion')
+        with doc.head as h:
+            self.define_header(h)
+        with doc as dcmnt:
+            self.define_preamble(dcmnt)
+        return doc
+    def define_header(self, head):
+        #link(rel='sylesheet', href='style.css') Uncomment when stylesheet is defined
+        pass
+    def define_preamble(self, doc):
+        with doc:
+            with div(id='header').add(h1()):
+                p('FreeSpeech (engine-independent continuous speech recogntion')
+            with div():
+                attr(cls='body')
+                p('This is an example of speech synthesis in Android.')
 if __name__ == "__main__":
     app = FreeSpeech()
     Gtk.main()
