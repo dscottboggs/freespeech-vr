@@ -41,7 +41,7 @@ this)
 
 """
 
-import codecs, dominate, json, os, platform, re, shutil, speech_recognition
+import json, os, platform, re, shutil, speech_recognition
 import subprocess, sys, textwrap, time
 import gi
 gi.require_version('Gtk', '3.0')
@@ -331,14 +331,14 @@ class FreeSpeech(object):
     def write_prefs(self):
         """ write command list to file """
         try:
-            with codecs.open(conf_files['cmdjson'], encoding='utf-8', mode='w') as f:
+            with open(conf_files['cmdjson'], mode='w') as f:
                 f.write(json.dumps(self.commands))
         except Exception as e:
             no,msg = e.args
             self.err.show(errormsg = no + ": " + msg
                 + "\n...Occurred in freespeech.write_prefs() while writing JSON.")
         try:
-            with codecs.open(conf_files['cmdtext'], encoding='utf-8', mode='w') as f:
+            with open(conf_files['cmdtext'], mode='w') as f:
                 for j in list(self.commands.keys()):
                     f.write('<s> '+j+' </s>\n')
         except Exception as e:
@@ -349,7 +349,7 @@ class FreeSpeech(object):
     def read_prefs(self):
         try:
             """ read command list from file """
-            with codecs.open(conf_files["cmdjson"], encoding='utf-8', mode='r') as f:
+            with open(conf_files["cmdjson"], mode='r') as f:
                 self.commands=json.loads(f.read())
         except OSError as e:
             no,msg = e.args
@@ -409,7 +409,7 @@ class FreeSpeech(object):
 
         # append it to the language reference
         try:
-            with codecs.open(conf_files["lang_ref"], encoding='utf-8', mode='a+') as f:
+            with open(conf_files["lang_ref"], mode='a+') as f:
                 for line in corpus:
                     if line:
                         f.write(line + '\n')
