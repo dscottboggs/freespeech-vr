@@ -520,7 +520,7 @@ class FreeSpeech(object):
         me.present()
         return True # command completed successfully!
 
-    def learn_new_words(self, button=None, textbuf=None):
+    def learn_new_words(self, button=None, text=None):
         """ Learn new words, jargon, or other language
 
           1. Add the word(s) to the dictionary, if necessary.
@@ -530,10 +530,10 @@ class FreeSpeech(object):
         self.snore()
         # prepare a text corpus from the textbox
         if text is None:
-            assert isinstance(text, Gtk.TextBuffer), "Received text must be a Gtk.TextBuffer"
-            corpus = _expand_punctuation_(_prepare_corpus_(textbuf)
-        else:
             corpus = _expand_punctuation_(_prepare_corpus_(txt=self.textbuf))
+        else:
+            assert isinstance(text, Gtk.TextBuffer), "Received text must be a Gtk.TextBuffer"
+            corpus = _expand_punctuation_(_prepare_corpus_(text)
 
         # append it to the language reference
         try:
@@ -803,8 +803,13 @@ class FreeSpeech(object):
         textbuf.select_range(textbuf.get_bounds())
         result      = dialog.run()
         if result is Gtk.ResponseType.OK:
-            with open(os.path.join('tmp', 'training_audio.wav'), 'w') as af:
+            with open(TEMP_FILES('audio_file'), 'w') as af:
                 af.write(self.last_audio)
+            with open(TEMP_FILES('transcription'), 'w') as tf:
+                tf.write(textbuf.get_text())
+            with open(TEMP_FILES('fileids'), 'w') as idf:
+                idf.write("(" + str(TEMP_FILES['audio_file']) + ")"
+                    + str(textbuf.get_text()))
         else:
             dialog.hide()
 
