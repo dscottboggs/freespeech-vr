@@ -29,6 +29,8 @@ This application depends on the following libraries/applications being installed
         text2wfreq wfreq2vocab text2wngram text2idngram ngram2mgram wngram2idngram
         idngram2stats mergeidngram idngram2lm binlm2arpa evallm interpolate
 
+    Also sphinxtrain and a bunch of files
+
 Fully installed file structure on a POSIX based system (base your packages upon
 this)
         File                        Location                                        Permissions
@@ -38,6 +40,7 @@ this)
     Default commands file:      /usr/local/share/freespeech/default-commands.json       644
     Speech Recognition library: /usr/local/bin/speech_recognition                       755
     Default training files:     /usr/local/share/freespeech/pocketsphinx-data/en-US/*   655
+    sphinxtrain:                /usr/lib/sphinxtrain/*                                  755
 
 """
 
@@ -79,7 +82,7 @@ REF_FILES={
     #"cmdjson"   : os.path.join(REFDIR, 'default_commands.json'),
     "lang_ref"  : os.path.join(REFDIR, 'freespeech.ref.txt'),
     "dic"       : os.path.join(POCKETSPHINX_FILES_DIR, 'pronounciation-dictionary.dict'),
-    "lm"        : os.path.join(POCKETSPHINX_FILES_DIR, 'language-model.lm.bin')
+    "lm"        : os.path.join(POCKETSPHINX_FILES_DIR, 'language-model.lm.bin'),
 }
 # configuration files are files that are *generated* by FreeSpeech and
 # contain custom configurations.
@@ -87,25 +90,29 @@ CONF_FILES={
     "lang_ref"  : os.path.join(CONFDIR, 'freespeech.ref.txt'),
     "vocab"     : os.path.join(CONFDIR, 'freespeech.vocab'),
     "idngram"   : os.path.join(CONFDIR, 'freespeech.idngram'),
-    "arpa"      : os.path.join(CONFDIR, 'freespeech.arpa'),
+    "lang_model": os.path.join(CONFDIR, 'freespeech.lm'),
     "dmp"       : os.path.join(CONFDIR, 'freespeech.dmp'),
     "cmdtext"   : os.path.join(CONFDIR, 'freespeech.cmd.txt'),
     "cmdjson"   : os.path.join(CONFDIR, 'freespeech.cmd.json'),
-    "dic"       : os.path.join(CONFDIR, 'custom.dic')
+    "dic"       : os.path.join(CONFDIR, 'freespeech.dic'),
+    "adapt_file": os.path.join(CONFDIR, 'freespeech.mllr')
 }
 # Temp Files are created when it's necessary to store something in a
 # file, but it doesn't matter if said file is deleted when the
-# application is killed or the system is restarted. I.E. Transient or temp files.
+# application is killed or the system is restarted. I.E. transient or
+# temp files.
 TEMP_FILES={
-    "audio_file"    : os.path.join(TEMPDIR, 'af.wav')
-    "transcription" : os.path.join(TEMPDIR, 'transcript')
-    "fileids"       : os.path.join(TEMPDIR, 'fIDs')
+    "audio_file"    : os.path.join(TEMPDIR, 'af.wav'),
+    "transcription" : os.path.join(TEMPDIR, 'transcript'),
+    "fileids"       : os.path.join(TEMPDIR, 'fIDs'),
+    "am_dir"        : os.path.join(TEMPDIR, 'acoustic_model', 'en-US')
 }
 
 ##  !!!     Global Functions    !!!
 def _undent_(text):
     """ shortcut for str(textwrap.dedent())"""
-    assert isinstance(text, str), "Text to be un-indented must be a string! Received: " + str(text)
+    assert isinstance(text, str),\
+        "Text to be un-indented must be a string! Received: " + str(text)
     return str(textwrap.dedent(text))
 
 def _expand_punctuation_(corpus):
@@ -196,20 +203,36 @@ def _prepare_corpus_(txt):
         corpus[ind] = tex
     return corpus
 
-def _check_dir_(directory):
-    """ Checks for existence of a necessary directory. """
-    try:
-        if not os.path.isdir(directory):
-            os.makedirs(directory)
-            _logger_.log_message("Successfully created "+ directory)
-        else:
-            _logger_.log_message("Successfully accessed " + directory, DEBUG)
-    except OSError as this_error:
-        errno, strerror = this_error.args
-        _messenger_.show_msg(
-            errormsg="in check_dir (" + str(directory) + ") -- "
-                + str(errno) + ": " + strerror,
-            severity=FATAL)
+def _check_dir_(directory, recursive=None):
+    """ Checks for existence of a necessary directory. If 'recursive' is
+        not none, it needs to be a folder to be recursively copied
+    """
+    if recursive is None:
+        try:
+            if not os.path.isdir(directory):
+                os.makedirs(directory)
+                LOGGER.log_message("Successfully created "+ directory)
+            else:
+                LOGGER.log_message("Successfully accessed "
+                    + directory, DEBUG)
+        except OSError as this_error:
+            errno, strerror = this_error.args
+            MESSENGER.show_msg(
+                errormsg="in check_dir (" + str(directory) + ") -- "
+                    + str(errno) + ": " + strerror,
+                severity=FATAL)
+    else:
+        assert isinstance(recursive, str),\
+            "Source directory in _check_dir_ must be passed as a string."
+        if os.isdir(recursive):
+            shutil.rmtree(recursive)
+        elif os.access(recursive, os.F_OK):
+            MESSENGER.show_msg(errormsg="File " + recursive
+                + " exists and is not a directory, but " + recursive
+                + " was attempted to be overwritten. This is strange."
+                + " Not continuing", severity=ERROR) # Exits.
+        shutil.copytree(recursive, directory)
+
 def _check_file_(self, filename, ref_file=None):
     """ Checks to see if a file exists. If there is a default
         configuration that can be assigned, pass it as the ref_file
@@ -220,13 +243,13 @@ def _check_file_(self, filename, ref_file=None):
                 raise OSError
             else:
                 shutil.copy(ref_file, filename)
-                _logger_.log_message("Successfully created "
+                LOGGER.log_message("Successfully created "
                     + filename, DEBUG)
-        _logger_.log_message("Successfully accessed " + filename,
+        LOGGER.log_message("Successfully accessed " + filename,
             DEBUG)
     except OSError as this_error:
         errno, strerror = this_error.args
-        _messenger_.show_msg(
+        MESSENGER.show_msg(
             errormsg="In FreezePeach; check_file.\nFile: "+ filename
                 + "\nReference file: " + ref_file + "\nError Number: "
                 + str(errno) + "\nError Message: " + strerror,
@@ -234,7 +257,7 @@ def _check_file_(self, filename, ref_file=None):
 
 def _check_args_(args):
         if APPNAME not in args:
-            _logger_.log_message(
+            LOGGER.log_message(
                 "The appliction was started under a name other than "
                 + APPNAME + " this isn't a big deal but it is strange.")
         for i, arg in zip(range(len(args)), args):
@@ -273,14 +296,15 @@ class FreeSpeech(object):
         _check_args_(sys.argv)
         self.prereqs()
         self.mike = speech_recognition.Microphone()
-        self.wreck = speech_recognition.Recognizer()
+        self.wreck = Recognizer()
         self.editing = False
         self.ttext = ""
         self.init_gui()
-        _messenger_.set_parent(self)
+        MESSENGER.set_parent(self)
         self.init_prefs()
         self.init_file_chooser()
-        self.start_listening()
+        if os.access(CONF_FILES["adapt_file"], os.R_OK):
+            self.start_listening(mllr_file=CONF_FILES["adapt_file"])
         #self.interface = Interface()
     def prereqs(self):
         # place to store the currently open file name, if any
@@ -289,21 +313,22 @@ class FreeSpeech(object):
         _check_dir_(CONFDIR)
         _check_file_(CONF_FILES['lang_ref'], REF_FILES['lang_ref'])
         _check_file_(CONF_FILES['dic'],      REF_FILES['dic'])
-        _check_file_(CONF_FILES['arpa'],     REF_FILES['lm'])
+        _check_file_(CONF_FILES['lang_model'],     REF_FILES['lm'])
+        _check_dir_(CUSTOM_PSX_FILES_DIR, recursive=POCKETSPHINX_FILES_DIR)
         #_check_file_(CONF_FILES['cmdjson'],  REF_FILES['cmdjson'])
         # Check for /usr/tmp, a library requires it.
         if not os.access("/usr/tmp/",os.W_OK):
             try:
                 os.symlink(os.path.join('/','tmp'), os.path.join('/',
                     'usr', 'tmp')
-                _logger_.log_message("Python successfully linked /tmp to /usr/tmp", )
+                LOGGER.log_message("Python successfully linked /tmp to /usr/tmp", )
             except os.error:
-                _logger_.log_message("Python failed to link /tmp to /usr/tmp", WARN)
+                LOGGER.log_message("Python failed to link /tmp to /usr/tmp", WARN)
                 try:
                     subprocess.call("sudo ln -s /tmp /usr/tmp", shell=True,
                         executable='/bin/bash')
                 except OSError:
-                    _logger_.log_message(_undent_("\
+                    LOGGER.log_message(_undent_("\
                         You do not have a /usr/tmp folder or it is not \
                         writable. Attempts to resolve this have failed."),
                         ERROR)
@@ -315,7 +340,7 @@ class FreeSpeech(object):
                 # will never be reached but I'd rather have it there
                 # in case something bizzarre happens so I can track
                 # it down.
-                _logger_.log_message(_undent_("\
+                LOGGER.log_message(_undent_("\
                     Uncaught error creating /usr/tmp. Does it \
                     exist? Is it writable?"), ERROR)
                 exit(ERROR)
@@ -456,7 +481,7 @@ class FreeSpeech(object):
                 f.write(json.dumps(self.commands))
         except Exception as e:
             no,msg = e.args
-            _messenger_.show(errormsg = no + ": " + msg
+            MESSENGER.show(errormsg = no + ": " + msg
                 + "\n...Occurred in freespeech.write_prefs() while writing JSON.")
         try:
             with open(CONF_FILES['cmdtext'], mode='w') as f:
@@ -464,7 +489,7 @@ class FreeSpeech(object):
                     f.write('<s> '+j+' </s>\n')
         except Exception as e:
             no,msg = e.args
-            _messenger_.show(errormsg = no + ": " + msg
+            MESSENGER.show(errormsg = no + ": " + msg
                 + "\n...Occurred in freespeech.write_prefs() while writing text.")
 
     def read_prefs(self):
@@ -474,7 +499,7 @@ class FreeSpeech(object):
                 self.commands=json.loads(f.read())
         except OSError as e:
             no,msg = e.args
-            _messenger_.show(errormsg = no + ": " + msg
+            MESSENGER.show(errormsg = no + ": " + msg
                 + "\n...Occurred in read_prefs()", severity=FATAL)
 
     def prefs_response(self, me, event):
@@ -543,10 +568,10 @@ class FreeSpeech(object):
                         f.write(line + '\n')
         except FileNotFoundError as e:
             num,msg=e.args
-            _messenger_.show(errormsg=num + ": " + msg, severity=FATAL)
+            MESSENGER.show(errormsg=num + ": " + msg, severity=FATAL)
         except PermissionError as e:
             num,msg=e.args
-            _messenger_.show(errormsg=num + ": " + msg, severity=FATAL)
+            MESSENGER.show(errormsg=num + ": " + msg, severity=FATAL)
 
         # cat command
         if platform.system()=='Windows':
@@ -556,7 +581,7 @@ class FreeSpeech(object):
 
         # compile a vocabulary
         # http://www.speech.cs.cmu.edu/SLM/toolkit_documentation.html#text2wfreq
-        _logger_.log_message("Compiling vocabulary and saving to file.")
+        LOGGER.log_message("Compiling vocabulary and saving to file.")
         try:
             subprocess.check_call(catcmd
                 + (CONF_FILES["cmdtext"] + ' ') * 4
@@ -568,11 +593,11 @@ class FreeSpeech(object):
         # but it seems to work.
         except subprocess.CalledProcessError as e:
             num,msg = e.args
-            _messenger_.show(errormsg= 'Trouble writing '
+            MESSENGER.show(errormsg= 'Trouble writing '
                 + CONF_FILES["vocab"] + ": " + msg, severity=FATAL)
         # update the idngram\
         # http://www.speech.cs.cmu.edu/SLM/toolkit_documentation.html#text2idngram
-        _logger_.log_message(
+        LOGGER.log_message(
             "Updating idngram based on the new vocabulary")
         try:
             subprocess.check_call('text2idngram -vocab '
@@ -581,29 +606,29 @@ class FreeSpeech(object):
                 + CONF_FILES["idngram"], shell=True)
         except subprocess.CalledProcessError as e:
             num,msg = e.args
-            _messenger_.show(errormsg= 'Trouble writing '
+            MESSENGER.show(errormsg= 'Trouble writing '
                 + CONF_FILES["idngram"] + ": " + msg, severity=FATAL)
 
         # (re)build arpa language model
         # http://drupal.cs.grinnell.edu/~stone/courses/computational-linguistics/ngram-lab.html
-        _logger_.log_message("Rebuilding arpa language model")
+        LOGGER.log_message("Rebuilding arpa language model")
         try:
             subprocess.check_call('idngram2lm -idngram -n 3 -verbosity 2 '
                 + CONF_FILES["idngram"] + ' -vocab ' + CONF_FILES["vocab"]
-                + ' -arpa ' + CONF_FILES["arpa"] + ' -vocab_type 1'
+                + ' -arpa ' + CONF_FILES["lang_model"] + ' -vocab_type 1'
                 ' -good_turing', shell=True)
         except subprocess.CalledProcessError as e:
             num,msg = e.args
-            _messenger_.show(errormsg='Trouble writing '
-            + CONF_FILES["arpa"] + ": " + msg)
+            MESSENGER.show(errormsg='Trouble writing '
+            + CONF_FILES["lang_model"] + ": " + msg)
 
         # convert to dmp
         try:
         subprocess.check_call('sphinx_lm_convert -i '
-                + CONF_FILES["arpa"] + ' -o ' + CONF_FILES["dmp"]
+                + CONF_FILES["lang_model"] + ' -o ' + CONF_FILES["dmp"]
                 + ' -ofmt dmp', shell=True)
         except subprocess.CalledProcessError as e:
-            _messenger_.show(errormsg='Trouble writing '
+            MESSENGER.show(errormsg='Trouble writing '
                 + CONF_FILES["dmp"])
         if not self.kill_mike_button.get_active():
             self.start_listening()
@@ -726,14 +751,22 @@ class FreeSpeech(object):
         return txt
 
     def start_listening(self, mike=None, wreck=None):
+        if os.access(os.path.join(CUSTOM_PSX_FILES_DIR, "mllr_matrix"), os.R_OK):
+            mllr = os.path.join(CUSTOM_PSX_FILES_DIR, "mllr_matrix")
+        else:
+            mllr = None
         if mike is None:
             mike = self.mike
         if wreck is None:
             wreck = self.wreck
         with mike as source:
-            _logger_.log_message("Listening on source " + str(source), DEBUG)
+            LOGGER.log_message("Listening on source " + str(source), DEBUG)
             wreck.adjust_for_ambient_noise(source)
-        self.snore = wreck.listen_in_background(mike, self.final_result)
+        self.snore = wreck.listen_in_background(mike, self.final_result,
+            mllr_file=mllr,
+            acoustic_model=os.path.join(CUSTOM_PSX_FILES_DIR, 'en-US')
+            language_model=CONF_FILES['lang_model'],
+            phoneme_model=CONF_FILES['dic'])
         # snore ^^ is a method that can be called to stop wreck/mike from listening.
 
 
@@ -762,10 +795,10 @@ class FreeSpeech(object):
 
     def final_result(self, wreck, audio):
         """Insert the final result into the textbox."""
-        hypothesis = self.interpret(audio, self.wreck, ENGINE, _logger_)
-        _logger_.log_message("Received text is " + hypothesis)
+        hypothesis = self.interpret(audio, self.wreck, ENGINE, LOGGER)
+        LOGGER.log_message("Received text is " + hypothesis)
         if not hypothesis:
-            _messenger_.show_msg("Invalid engine response. See the log for errors.")
+            MESSENGER.show_msg("Invalid engine response. See the log for errors.")
         # All this stuff appears as one single action
         self.textbuf.begin_user_action()
         self.text.set_tooltip_text(hypothesis)
@@ -782,7 +815,7 @@ class FreeSpeech(object):
             if self.echo_keys_button.get_active():
                 send_string(hypothesis)
                 display.sync()
-            _logger_.log_message(hypothesis + " executed.")
+            LOGGER.log_message(hypothesis + " executed.")
         ins = self.textbuf.get_insert()
         itera = self.textbuf.get_iter_at_mark(ins) # iter is a python keyword
         # @ Henry Kroll WTF does this do?
@@ -803,6 +836,7 @@ class FreeSpeech(object):
         textbuf.select_range(textbuf.get_bounds())
         result      = dialog.run()
         if result is Gtk.ResponseType.OK:
+            self.learn_new_words(text=textbuf.get_text())
             with open(TEMP_FILES('audio_file'), 'w') as af:
                 af.write(self.last_audio)
             with open(TEMP_FILES('transcription'), 'w') as tf:
@@ -810,8 +844,69 @@ class FreeSpeech(object):
             with open(TEMP_FILES('fileids'), 'w') as idf:
                 idf.write("(" + str(TEMP_FILES['audio_file']) + ")"
                     + str(textbuf.get_text()))
+            os.link(CUSTOM_PSX_FILES_DIR,   # os.link() is for hardlinks
+                os.path.join(TEMPDIR, 'acoustic_model'))
+            os.link(CONF_FILES['dic'],
+                os.path.join(TEMPDIR, 'custom.dic'))
+            os.link(CONF_FILES['lm'], os.path.join(TEMPDIR, 'lm.bin'))
+            self.training_subprocess()
         else:
             dialog.hide()
+
+    def training_subprocess(self):
+        """
+        Executes the sphinxtrain subprocesses.
+
+        https://cmusphinx.github.io/wiki/tutorialadapt/
+        """
+        os.chdir(TEMPDIR)
+        try:
+            subprocess.check_call([
+                'sphinx_fe',
+                '-argfile', os.path.join(TEMP_FILES['am_dir'], 'feat_params'),
+                '-samprate', '16000',
+                '-c', TEMP_FILES['fileids'],
+                '-di', '.',
+                'do', '.',
+                '-ei', 'wav',
+                '-eo', 'mfc',
+                '-mswav', 'yes'
+            ])
+        except subprocess.CalledProcessError as e:
+            LOGGER.log_message(_undent_('\
+                Error executing sphinx_fe in freespeech.training_subprocess\n\
+                Error is: \"' + str(e.args) + "\""), SUBPROCESS_FAILURE)
+        try:
+            subprocess.check_call([
+                str(os.path.join("/", "usr", "sphinxtrain", "bw")),
+                '-hmmdir', TEMP_FILES['am_dir']),
+                '-moddeffn', os.path.join(TEMP_FILES['am_dir'], 'mdef.txt'),
+                '-ts2cbfn', '.ptm',
+                '-feat', '1s_c_d_dd',
+                '-svspec', '0-12/13-25/26-38',
+                '-cmn', 'current',
+                '-agc', 'none',
+                '-dictfn', os.path.join(TEMPDIR,'custom.dic'),
+                '-ctlfn', TEMP_FILES['fileids'],
+                '-lsnfn', TEMP_FILES['transcription'],
+                '-accumdir'
+            ])
+        except subprocess.CalledProcessError as e:
+            LOGGER.log_message(_undent_('\
+                Error executing bw in freespeech.training_subprocess\n\
+                Error is: \"' + str(e.args) + "\""), SUBPROCESS_FAILURE)
+        try:
+            subprocess.check_call([
+                str(os.path.join("/", "usr", "sphinxtrain", "mllr_solve")),
+                '-meanfn', os.path.join(TEMP_FILES['am_dir'], 'means'),
+                '-outmllrfn', 'mllr_matrix',
+                '-accumdir', TEMPDIR
+            ])
+        except subprocess.CalledProcessError as e:
+            LOGGER.log_message(_undent_('\
+                Error executing mllr_solve in freespeech.training_subprocess\n\
+                Error is: \"' + str(e.args) + "\""), SUBPROCESS_FAILURE)
+        os.link('mllr_matrix')
 
     def do_command(self, cmd):
         cmd.strip()
@@ -819,6 +914,7 @@ class FreeSpeech(object):
         if cmd in self.commands:
             return eval(self.commands[cmd])
         return False
+
     """Process spoken commands"""
     def clear_edits(self):
         """ close file and start over without saving """
@@ -827,11 +923,13 @@ class FreeSpeech(object):
         self.window.set_title("FreeSpeech")
         self.undo = []
         return True # command completed successfully!
+
     def backspace(self):
         """ delete one character """
         start = self.textbuf.get_iter_at_mark(self.textbuf.get_insert())
         self.textbuf.backspace(start, False, True)
         return True # command completed successfully!
+
     def select(self, argument=None):
         """ select [text/all/to end] """
         if argument:
@@ -852,6 +950,7 @@ class FreeSpeech(object):
             self.textbuf.select_range(search_back[0], search_back[1])
             return True # command completed successfully!
         return False
+
     def delete(self, argument=None):
         """ delete [text] or erase selection """
         if argument:
@@ -954,7 +1053,7 @@ class Messenger(Gtk.Dialog):
         if parent is None:
             parent = self
         if severity is LOW:
-            _logger_.log_message(errormsg, ERROR)
+            LOGGER.log_message(errormsg, ERROR)
         elif severity is FATAL:
             self.label.set_text(errormsg)
             self.run()
@@ -986,15 +1085,15 @@ class Messenger(Gtk.Dialog):
     def get_flags(self):
         return self.dialogFlags
 
-class Wreckognizer(speech_recognition.Recognizer):
+class Recognizer(speech_recognition.Recognizer):
     """ A subclass of the Recognizer class with the purpose of reimplementing `recognize_sphinx()`
-        with the option acceptance of custom acoustic, language, and phoneme models. """
+        with the optional acceptance of custom models. """
     def __init__(self):
         super().__init__()
 
     def recognize_sphinx(self, audio_data, language='en-US', keyword_entries=None, grammar=None,
             show_all=False, acoustic_model=None, language_model=None, phoneme_model=None,
-            base_dir=None):
+            base_dir=None, mllr_file=None):
         assert isinstance(audio_data, speech_recognition.AudioData),                      \
             "Given parameter 'audio_data' must be audio data (of AudioData type)"
         assert isinstance(language, str) or language is None,          \
@@ -1009,8 +1108,8 @@ class Wreckognizer(speech_recognition.Recognizer):
             "base directory path must be formatted as a string"
         assert keyword_entries is None or all(isinstance(keyword,
             (type(""), type(u''))) and 0 <= sensitivity <= 1 for
-                keyword, sensitivity in keyword_entries), _undent_(
-                "``keyword_entries`` must be ``None`` or a list of \
+                keyword, sensitivity in keyword_entries), _undent_("\
+                ``keyword_entries`` must be ``None`` or a list of \
                 pairs of strings and numbers between 0 and 1")
         # Holy crap that's a complicated line ^^
         try:
@@ -1034,7 +1133,7 @@ class Wreckognizer(speech_recognition.Recognizer):
             "missing PocketSphinx language model parameters directory: \"{}\"".
                 format(acoustic_parameters_directory))
         if language_model is None: # set to default for SpeechRecognition
-            language_model_file = CONF_FILES['arpa']
+            language_model_file = CONF_FILES['lang_model']
         else:   #   the language model file has been defined
             language_model_file = language_model
         if not os.path.isfile(language_model_file):
@@ -1058,8 +1157,13 @@ class Wreckognizer(speech_recognition.Recognizer):
         # set the path of the hidden Markov model (HMM) parameter files
         config.set_string("-lm", language_model_file)
         config.set_string("-dict", phoneme_dictionary_file)
-        config.set_string("-logfn", CONF_FILES['pocketsphinx.log'])
         # disable logging (logging causes unwanted output in terminal)
+        config.set_string("-logfn", CONF_FILES['pocketsphinx.log'])
+        # set Linear regression file if exists:
+        if mllr_file is not None:
+            assert isinstance(mllr_file, str),\
+                "Received regression file must be a string"
+            config.set_string("-mllr", mllr_file)
         decoder = pocketsphinx.Decoder(config)
 
         # obtain audio data
@@ -1069,12 +1173,18 @@ class Wreckognizer(speech_recognition.Recognizer):
 
         # obtain recognition results
         if keyword_entries is not None:  # explicitly specified set of keywords
+            # This REALLY doesn't work
             with speech_recognition.PortableNamedTemporaryFile("w") as f:
-                # generate a keywords file - Sphinx documentation recommendeds sensitivities between 1e-50 and 1e-5
-                f.writelines("{} /1e{}/\n".format(keyword, 100 * sensitivity - 110) for keyword, sensitivity in keyword_entries)
+                # generate a keywords file - Sphinx documentation
+                # recommendeds sensitivities between 1e-50 and 1e-5
+                f.writelines("{} /1e{}/\n".format(keyword, 100
+                    * sensitivity - 110) for keyword, sensitivity in
+                    keyword_entries)
                 f.flush()
 
-                # perform the speech recognition with the keywords file (this is inside the context manager so the file isn;t deleted until we're done)
+                # perform the speech recognition with the keywords file
+                # (this is inside the context manager so the file isn't\
+                # deleted until we're done)
                 decoder.set_kws("keywords", f.name)
                 decoder.set_search("keywords")
                 decoder.start_utt()  # begin utterance processing
@@ -1136,7 +1246,7 @@ class LogRecorder():
         print("FreezePeach: ", self.LOGLVL[level], " -- ", message)
 
 if __name__ == "__main__":
-    _logger_    = LogRecorder()
-    _messenger_ = Messenger(title="Error!")
+    LOGGER    = LogRecorder()
+    MESSENGER = Messenger(title="Error!")
     app = FreeSpeech()
     Gtk.main()
