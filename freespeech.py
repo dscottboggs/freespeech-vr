@@ -82,7 +82,7 @@ REF_FILES={
     #"cmdjson"   : os.path.join(REFDIR, 'default_commands.json'),
     "lang_ref"  : os.path.join(REFDIR, 'freespeech.ref.txt'),
     "dic"       : os.path.join(POCKETSPHINX_FILES_DIR, 'pronounciation-dictionary.dict'),
-    "lm"        : os.path.join(POCKETSPHINX_FILES_DIR, 'language-model.lm.bin'),
+    "lang_model": os.path.join(POCKETSPHINX_FILES_DIR, 'language-model.lm.bin')
 }
 # configuration files are files that are *generated* by FreeSpeech and
 # contain custom configurations.
@@ -224,11 +224,11 @@ def _check_dir_(directory, recursive=None):
     else:
         assert isinstance(recursive, str),\
             "Source directory in _check_dir_ must be passed as a string."
-        if os.isdir(recursive):
-            shutil.rmtree(recursive)
-        elif os.access(recursive, os.F_OK):
-            MESSENGER.show_msg(errormsg="File " + recursive
-                + " exists and is not a directory, but " + recursive
+        if os.path.isdir(directory):
+            shutil.rmtree(directory)
+        elif os.access(directory, os.F_OK):
+            MESSENGER.show_msg(errormsg="File " + directory
+                + " exists and is not a directory, but " + directory
                 + " was attempted to be overwritten. This is strange."
                 + " Not continuing", severity=ERROR) # Exits.
         shutil.copytree(recursive, directory)
@@ -240,7 +240,8 @@ def _check_file_(self, filename, ref_file=None):
     try:
         if not os.access(filename, os.R_OK):
             if ref_file is None:
-                raise OSError
+                raise OSError("In global _check_file_(), ref_file was none: "
+                    + str(ref_file) + " filename: " + filename)
             else:
                 shutil.copy(ref_file, filename)
                 LOGGER.log_message("Successfully created "
@@ -248,7 +249,11 @@ def _check_file_(self, filename, ref_file=None):
         LOGGER.log_message("Successfully accessed " + filename,
             DEBUG)
     except OSError as this_error:
-        errno, strerror = this_error.args
+        if len(this_error.args) > 1:
+            errno, strerror = this_error.args
+        else:
+            errno = -1337
+            strerror = str(this_error.args)
         MESSENGER.show_msg(
             errormsg="In FreezePeach; check_file.\nFile: "+ filename
                 + "\nReference file: " + ref_file + "\nError Number: "
@@ -267,7 +272,7 @@ def _check_args_(args):
             if arg is ("-e" or "--engine"):
                 _ENGINE_ = args[i+1]
 
-def _display_help_(self):
+def _display_help_():
     """ diplays a basic list of command line options. In this case
         we can assume this was run from the CLI and just use print,
         rather than the more generic Logger() which is there to allow
@@ -308,19 +313,19 @@ class FreeSpeech(object):
         #self.interface = Interface()
     def prereqs(self):
         # place to store the currently open file name, if any
-        self.check_args()
+        _check_args_(sys.argv)
         self.open_filename=''
         _check_dir_(CONFDIR)
         _check_file_(CONF_FILES['lang_ref'], REF_FILES['lang_ref'])
         _check_file_(CONF_FILES['dic'],      REF_FILES['dic'])
-        _check_file_(CONF_FILES['lang_model'],     REF_FILES['lm'])
+        _check_file_(CONF_FILES['lang_model'],     REF_FILES['lang_model'])
         _check_dir_(CUSTOM_PSX_FILES_DIR, recursive=POCKETSPHINX_FILES_DIR)
         #_check_file_(CONF_FILES['cmdjson'],  REF_FILES['cmdjson'])
         # Check for /usr/tmp, a library requires it.
         if not os.access("/usr/tmp/",os.W_OK):
             try:
                 os.symlink(os.path.join('/','tmp'), os.path.join('/',
-                    'usr', 'tmp')
+                    'usr', 'tmp'))
                 LOGGER.log_message("Python successfully linked /tmp to /usr/tmp", )
             except os.error:
                 LOGGER.log_message("Python failed to link /tmp to /usr/tmp", WARN)
@@ -374,15 +379,17 @@ class FreeSpeech(object):
         self.scroller.add(self.text)
         vbox.pack_start(self.scroller, True, True, 5)
         vbox.pack_end(hbox, False, False, False)
-        self.learn_button = Gtk.Button("Learn")
-        self.learn_button.connect('clicked', self.learn_new_words)
+        if ENGINE is 'pocketsphinx':
+            learn_button = Gtk.Button("Teach Sphinx")
+            learn_button.connect('clicked', self.train_sphinx)
         self.echo_keys_button = Gtk.ToggleButton("Send keys")
         self.echo_keys_button.connect('clicked', self.toggle_echo)
         #self.prefs_dialog_button = Gtk.Button("Show commands")
         #self.prefs_dialog_button.connect('clicked', self.show_commands)
         self.kill_mike_button = Gtk.ToggleButton("Mute")
         self.kill_mike_button.connect('clicked', self.mute)
-        hbox.pack_start(self.learn_button, True, False, 0)
+        if ENGINE is 'pocketsphinx':
+            hbox.pack_start(learn_button, True, False, 0)
         hbox.pack_start(self.echo_keys_button, True, False, 0)
         #hbox.pack_start(self.prefs_dialog_button, True, False, 0)
         hbox.pack_start(self.kill_mike_button, True, False, 0)
@@ -558,7 +565,7 @@ class FreeSpeech(object):
             corpus = _expand_punctuation_(_prepare_corpus_(txt=self.textbuf))
         else:
             assert isinstance(text, Gtk.TextBuffer), "Received text must be a Gtk.TextBuffer"
-            corpus = _expand_punctuation_(_prepare_corpus_(text)
+            corpus = _expand_punctuation_(_prepare_corpus_(text))
 
         # append it to the language reference
         try:
@@ -624,7 +631,7 @@ class FreeSpeech(object):
 
         # convert to dmp
         try:
-        subprocess.check_call('sphinx_lm_convert -i '
+            subprocess.check_call('sphinx_lm_convert -i '
                 + CONF_FILES["lang_model"] + ' -o ' + CONF_FILES["dmp"]
                 + ' -ofmt dmp', shell=True)
         except subprocess.CalledProcessError as e:
@@ -763,12 +770,11 @@ class FreeSpeech(object):
             LOGGER.log_message("Listening on source " + str(source), DEBUG)
             wreck.adjust_for_ambient_noise(source)
         self.snore = wreck.listen_in_background(mike, self.final_result,
+        # snore ^^ is a method that can be called to stop wreck/mike from listening.
             mllr_file=mllr,
-            acoustic_model=os.path.join(CUSTOM_PSX_FILES_DIR, 'en-US')
+            acoustic_model=os.path.join(CUSTOM_PSX_FILES_DIR, 'en-US'),
             language_model=CONF_FILES['lang_model'],
             phoneme_model=CONF_FILES['dic'])
-        # snore ^^ is a method that can be called to stop wreck/mike from listening.
-
 
     def interpret(self, audio, wreck, engine, logger):
         logger.log_message("Saving clip for correction")
@@ -830,25 +836,25 @@ class FreeSpeech(object):
         toplabel    = Gtk.Label ("Sphinx recognized this: ")
         bottomlabel = Gtk.Label ("What did you really say?")
         textbuf     = Gtk.TextBuffer()
-        textbuf.setText(self.wreck.recognize_sphinx(self.last_audio)
+        textbuf.set_text(self.wreck.recognize_sphinx(self.last_audio))
         x           = Gtk.TextView()
         textbox     = x.new_with_buffer(textbuf)
         textbuf.select_range(textbuf.get_bounds())
         result      = dialog.run()
         if result is Gtk.ResponseType.OK:
             self.learn_new_words(text=textbuf.get_text())
-            with open(TEMP_FILES('audio_file'), 'w') as af:
+            with open(TEMP_FILES['audio_file'], 'w') as af:
                 af.write(self.last_audio)
-            with open(TEMP_FILES('transcription'), 'w') as tf:
+            with open(TEMP_FILES['transcription'], 'w') as tf:
                 tf.write(textbuf.get_text())
-            with open(TEMP_FILES('fileids'), 'w') as idf:
+            with open(TEMP_FILES['fileids'], 'w') as idf:
                 idf.write("(" + str(TEMP_FILES['audio_file']) + ")"
                     + str(textbuf.get_text()))
             os.link(CUSTOM_PSX_FILES_DIR,   # os.link() is for hardlinks
                 os.path.join(TEMPDIR, 'acoustic_model'))
             os.link(CONF_FILES['dic'],
                 os.path.join(TEMPDIR, 'custom.dic'))
-            os.link(CONF_FILES['lm'], os.path.join(TEMPDIR, 'lm.bin'))
+            os.link(CONF_FILES['lang_model'], os.path.join(TEMPDIR, 'lm.bin'))
             self.training_subprocess()
         else:
             dialog.hide()
@@ -879,7 +885,7 @@ class FreeSpeech(object):
         try:
             subprocess.check_call([
                 str(os.path.join("/", "usr", "sphinxtrain", "bw")),
-                '-hmmdir', TEMP_FILES['am_dir']),
+                '-hmmdir', TEMP_FILES['am_dir'],
                 '-moddeffn', os.path.join(TEMP_FILES['am_dir'], 'mdef.txt'),
                 '-ts2cbfn', '.ptm',
                 '-feat', '1s_c_d_dd',
@@ -1049,7 +1055,8 @@ class Messenger(Gtk.Dialog):
         self.vbox.pack_start(self.label, False, False, False)
         self.label.show()
 
-    def show_msg(self, severity=NORMAL, parent=None, errormsg="no error message has been included"):
+    def show_msg(self, severity=NORMAL, parent=None,
+            errormsg="no error message has been included"):
         if parent is None:
             parent = self
         if severity is LOW:
@@ -1086,13 +1093,16 @@ class Messenger(Gtk.Dialog):
         return self.dialogFlags
 
 class Recognizer(speech_recognition.Recognizer):
-    """ A subclass of the Recognizer class with the purpose of reimplementing `recognize_sphinx()`
-        with the optional acceptance of custom models. """
+    """ A subclass of the Recognizer class with the purpose of
+        reimplementing `recognize_sphinx()` with the optional acceptance
+        of custom models.
+    """
     def __init__(self):
         super().__init__()
 
-    def recognize_sphinx(self, audio_data, language='en-US', keyword_entries=None, grammar=None,
-            show_all=False, acoustic_model=None, language_model=None, phoneme_model=None,
+    def recognize_sphinx(self, audio_data, language='en-US',
+            keyword_entries=None, grammar=None, show_all=False,
+            acoustic_model=None, language_model=None, phoneme_model=None,
             base_dir=None, mllr_file=None):
         assert isinstance(audio_data, speech_recognition.AudioData),                      \
             "Given parameter 'audio_data' must be audio data (of AudioData type)"
