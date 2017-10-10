@@ -256,7 +256,7 @@ def _check_file_(self, filename, ref_file=None):
             strerror = str(this_error.args)
         MESSENGER.show_msg(
             errormsg="In FreezePeach; check_file.\nFile: "+ filename
-                + "\nReference file: " + ref_file + "\nError Number: "
+                + "\nReference file: " + str(ref_file) + "\nError Number: "
                 + str(errno) + "\nError Message: " + strerror,
             severity=FATAL)
 
