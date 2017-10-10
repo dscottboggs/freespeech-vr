@@ -71,7 +71,7 @@ def check_file(filename, ref_file=None, permissions=None):
             "Reference file: " + ref_file,
             "Error Number: " + str(errno),
             "Error Message: " + strerror,
-            sep='\n')
+            sep='\n\t')
 # Create reference directory
 check_dir(REFDIR, recursive=os.getcwd())
 
