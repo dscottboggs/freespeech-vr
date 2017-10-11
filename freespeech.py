@@ -59,6 +59,7 @@ GObject.threads_init()
 APPNAME                 = 'FreeSpeech'
 SHORT_DESC              = 'Continuous engine-independent realtime speech recognition'
 ENGINE                  = 'pocketsphinx'
+API_KEY, API_PW         = None, None
 SUCCESSFULLY, ERROR, SUBPROCESS_FAILURE = 0, 1, 2
 LOW, NORMAL, HIGH, FATAL= 0, 1, 2, 3
 LOG, DEBUG, WARN        = 0, 3, 4
@@ -67,35 +68,46 @@ LOG, DEBUG, WARN        = 0, 3, 4
 loglvl                  = [
     "LOG", "ERROR", "SUBPROCESS_MESSAGE", "DEBUG", "WARN"
 ]
-REFDIR                  = os.path.join("/", "usr", "share", APPNAME)
-CONFDIR                 = os.path.join("/", "etc", APPNAME)
-POCKETSPHINX_FILES_DIR  = os.path.join(REFDIR, 'pocketsphinx-data', 'en-US')
-CUSTOM_PSX_FILES_DIR    = os.path.join(CONFDIR, 'pocketsphinx-data', 'en-US')
-TEMPDIR                 = os.path.join('/', 'tmp', APPNAME)
+if os.name is 'posix':
+    REFDIR                  = os.path.abspath(os.path.join(os.sep,"usr", "share", APPNAME))
+    CONFDIR                 = os.path.abspath(os.path.join(os.sep, "etc", APPNAME))
+else:
+    print("http://i0.kym-cdn.com/photos/images/original/000/514/088/97f.png")
+    exit(SUCCESSFULLY)
+POCKETSPHINX_FILES_DIR  = os.path.join(REFDIR, 'pocketsphinx-data',
+    'en-US', "acoustic-model")
+CUSTOM_PSX_FILES_DIR    = os.path.join(CONFDIR, 'pocketsphinx-data',
+    'en-US', "acoustic-model")
+if os.name is 'posix':
+    TEMPDIR                 = os.path.abspath(os.path.join(os.sep, 'tmp', APPNAME))
 # note refdir will have to be redefined if the system is Windows, as
-# Windows doesn't have an /etc perhaps the Windows dev could create an
+# Windows doesn't have an /etc. Perhaps the Windows dev could create an
 # installer which creates a C:\Program Files\FreeSpeech\ and put it in there.
+else:
+    pass
+    #todo windows
 
 # To be explicitly clear, reference files are files that are packaged
 # with FreeSpeech and contain default values,
 REF_FILES={
     #"cmdjson"   : os.path.join(REFDIR, 'default_commands.json'),
-    "lang_ref"  : os.path.join(REFDIR, 'freespeech.ref.txt'),
+    "lang_ref"  : os.path.join(REFDIR, APPNAME+'.ref.txt'),
     "dic"       : os.path.join(POCKETSPHINX_FILES_DIR, 'pronounciation-dictionary.dict'),
     "lang_model": os.path.join(POCKETSPHINX_FILES_DIR, 'language-model.lm.bin')
 }
 # configuration files are files that are *generated* by FreeSpeech and
 # contain custom configurations.
 CONF_FILES={
-    "lang_ref"  : os.path.join(CONFDIR, 'freespeech.ref.txt'),
-    "vocab"     : os.path.join(CONFDIR, 'freespeech.vocab'),
-    "idngram"   : os.path.join(CONFDIR, 'freespeech.idngram'),
-    "lang_model": os.path.join(CONFDIR, 'freespeech.lm'),
-    "dmp"       : os.path.join(CONFDIR, 'freespeech.dmp'),
-    "cmdtext"   : os.path.join(CONFDIR, 'freespeech.cmd.txt'),
-    "cmdjson"   : os.path.join(CONFDIR, 'freespeech.cmd.json'),
-    "dic"       : os.path.join(CONFDIR, 'freespeech.dic'),
-    "adapt_file": os.path.join(CONFDIR, 'freespeech.mllr')
+    "lang_ref"  : os.path.join(CONFDIR, APPNAME+'.ref.txt'),
+    "vocab"     : os.path.join(CONFDIR, APPNAME+'.vocab'),
+    "idngram"   : os.path.join(CONFDIR, APPNAME+'.idngram'),
+    "lang_model": os.path.join(CONFDIR, APPNAME+'.lm'),
+    "dmp"       : os.path.join(CONFDIR, APPNAME+'.dmp'),
+    "cmdtext"   : os.path.join(CONFDIR, APPNAME+'.cmd.txt'),
+    "cmdjson"   : os.path.join(CONFDIR, APPNAME+'.cmd.json'),
+    "dic"       : os.path.join(CONFDIR, APPNAME+'.dic'),
+    "adapt_file": os.path.join(CONFDIR, APPNAME+'.mllr'),
+    "psx_log"   : os.path.join(CONFDIR, 'pocketsphinx.log')
 }
 # Temp Files are created when it's necessary to store something in a
 # file, but it doesn't matter if said file is deleted when the
@@ -107,7 +119,14 @@ TEMP_FILES={
     "fileids"       : os.path.join(TEMPDIR, 'fIDs'),
     "am_dir"        : os.path.join(TEMPDIR, 'acoustic_model', 'en-US')
 }
-
+if os.name is 'posix':
+    SpxTrn_REF_FILES={
+        'bw'        : os.path.abspath(os.path.join(os.sep, 'usr', 'lib', 'sphinxtrain', 'bw')),
+        'mllr_solve': os.path.abspath(os.path.join(os.sep, 'usr', 'lib', 'sphinxtrain', 'mllr_solve'))
+    }
+else:
+    pass
+    # todo windows
 ##  !!!     Global Functions    !!!
 def _undent_(text):
     """ shortcut for str(textwrap.dedent())"""
@@ -233,7 +252,7 @@ def _check_dir_(directory, recursive=None):
                 + " Not continuing", severity=ERROR) # Exits.
         shutil.copytree(recursive, directory)
 
-def _check_file_(self, filename, ref_file=None):
+def _check_file_(filename, ref_file=None):
     """ Checks to see if a file exists. If there is a default
         configuration that can be assigned, pass it as the ref_file
     """
@@ -246,19 +265,24 @@ def _check_file_(self, filename, ref_file=None):
                 shutil.copy(ref_file, filename)
                 LOGGER.log_message("Successfully created "
                     + filename, DEBUG)
+                return True
         LOGGER.log_message("Successfully accessed " + filename,
             DEBUG)
+        return True
     except OSError as this_error:
         if len(this_error.args) > 1:
             errno, strerror = this_error.args
         else:
             errno = -1337
             strerror = str(this_error.args)
-        MESSENGER.show_msg(
-            errormsg="In FreezePeach; check_file.\nFile: "+ filename
-                + "\nReference file: " + str(ref_file) + "\nError Number: "
-                + str(errno) + "\nError Message: " + strerror,
-            severity=FATAL)
+        if ref_file is None:
+            return False
+        else:
+            MESSENGER.show_msg(
+                errormsg="In FreeSpeech; check_file.\nFile: "+ filename
+                    + "\nReference file: " + str(ref_file) + "\nError Number: "
+                    + str(errno) + "\nError Message: " + strerror,
+                severity=FATAL)
 
 def _check_args_(args):
         if APPNAME not in args:
@@ -308,8 +332,7 @@ class FreeSpeech(object):
         MESSENGER.set_parent(self)
         self.init_prefs()
         self.init_file_chooser()
-        if os.access(CONF_FILES["adapt_file"], os.R_OK):
-            self.start_listening(mllr_file=CONF_FILES["adapt_file"])
+        self.start_listening()
         #self.interface = Interface()
     def prereqs(self):
         # place to store the currently open file name, if any
@@ -319,16 +342,26 @@ class FreeSpeech(object):
         _check_file_(CONF_FILES['lang_ref'], REF_FILES['lang_ref'])
         _check_file_(CONF_FILES['dic'],      REF_FILES['dic'])
         _check_file_(CONF_FILES['lang_model'],     REF_FILES['lang_model'])
+        for k, f in SpxTrn_REF_FILES.items():
+            if not _check_file_(f):
+                MESSENGER.show_msg(errormsg=_undent_('''
+                SphinxTrain doesn't seem to be installed.
+                libfile not found: ''' + str(f) + '''
+                Please install sphinxtrain 5prealpha.
+                http://cmusphinx.sourceforge.net/'''),
+                severity=FATAL)
         _check_dir_(CUSTOM_PSX_FILES_DIR, recursive=POCKETSPHINX_FILES_DIR)
         #_check_file_(CONF_FILES['cmdjson'],  REF_FILES['cmdjson'])
         # Check for /usr/tmp, a library requires it.
+        # this could pose a serious challenge to a windows developer,
+        # and may require editing the source of the CMU/Cam toolkit.
         if not os.access("/usr/tmp/",os.W_OK):
             try:
-                os.symlink(os.path.join('/','tmp'), os.path.join('/',
-                    'usr', 'tmp'))
+                os.symlink(os.path.abspath('tmp'), os.path.abspath(
+                    os.path.join('usr', 'tmp')))
                 LOGGER.log_message("Python successfully linked /tmp to /usr/tmp", )
             except os.error:
-                LOGGER.log_message("Python failed to link /tmp to /usr/tmp", WARN)
+                LOGGER.log_message("Python failed to link /tmp to /usr/tmp. Perhaps with sudo?", WARN)
                 try:
                     subprocess.call("sudo ln -s /tmp /usr/tmp", shell=True,
                         executable='/bin/bash')
@@ -380,18 +413,18 @@ class FreeSpeech(object):
         vbox.pack_start(self.scroller, True, True, 5)
         vbox.pack_end(hbox, False, False, False)
         if ENGINE is 'pocketsphinx':
-            learn_button = Gtk.Button("Teach Sphinx")
+            learn_button = Gtk.Button("Teach Sphinx...")
             learn_button.connect('clicked', self.train_sphinx)
         self.echo_keys_button = Gtk.ToggleButton("Send keys")
         self.echo_keys_button.connect('clicked', self.toggle_echo)
-        #self.prefs_dialog_button = Gtk.Button("Show commands")
-        #self.prefs_dialog_button.connect('clicked', self.show_commands)
+        self.prefs_dialog_button = Gtk.Button("Edit Commands...")
+        self.prefs_dialog_button.connect('clicked', self.show_commands)
         self.kill_mike_button = Gtk.ToggleButton("Mute")
         self.kill_mike_button.connect('clicked', self.mute)
         if ENGINE is 'pocketsphinx':
             hbox.pack_start(learn_button, True, False, 0)
         hbox.pack_start(self.echo_keys_button, True, False, 0)
-        #hbox.pack_start(self.prefs_dialog_button, True, False, 0)
+        hbox.pack_start(self.prefs_dialog_button, True, False, 0)
         hbox.pack_start(self.kill_mike_button, True, False, 0)
         self.window.add(vbox)
         self.window.show_all()
@@ -403,23 +436,24 @@ class FreeSpeech(object):
               Gtk.STOCK_OK, Gtk.ResponseType.OK))
 
     def init_commands(self):
-        self.commands = {'file quit': 'Gtk.main_quit',
-            'file open': 'self.file_open',
-            'file save': 'self.file_save',
-            'file save as': 'self.file_save_as',
-            'show commands': 'self.show_commands',
-            'editor clear': 'self.clear_edits',
-            'clear edits': 'self.clear_edits',
-            'file close': 'self.clear_edits',
-            'delete': 'self.delete',
-            'select': 'self.select',
-            'send keys' : 'self.toggle_keys',
-            'insert': 'self.insert',
-            'go to the end': 'self.done_editing',
-            'done editing': 'self.done_editing',
-            'scratch that': 'self.scratch_that',
-            'back space': 'self.backspace',
-            'new paragraph':  'self.new_paragraph',
+        self.commands = {
+            'file quit'     : 'Gtk.main_quit',
+            'file open'     : 'self.file_open',
+            'file save'     : 'self.file_save',
+            'file save as'  : 'self.file_save_as',
+            'show commands' : 'self.show_commands',
+            'editor clear'  : 'self.clear_edits',
+            'clear edits'   : 'self.clear_edits',
+            'file close'    : 'self.clear_edits',
+            'delete'        : 'self.delete',
+            'select'        : 'self.select',
+            'send keys'     : 'self.toggle_keys',
+            'insert'        : 'self.insert',
+            'go to the end' : 'self.done_editing',
+            'done editing'  : 'self.done_editing',
+            'scratch that'  : 'self.scratch_that',
+            'back space'    : 'self.backspace',
+            'new paragraph' : 'self.new_paragraph',
         }
         self.write_prefs()
         try:
@@ -440,7 +474,6 @@ class FreeSpeech(object):
             self.init_commands()
         else:
             self.read_prefs()
-
         this.label = Gtk.Label(_undent_("\
             Double-click to change command wording.\n\
             If new commands don't work click the learn button to train them."))
@@ -469,14 +502,18 @@ class FreeSpeech(object):
         this.vbox.pack_end(this.tree, False, False, 0)
         this.label.show()
         this.tree.show()
-        self.commands_old = self.commands
-        this.show_all()
+        #self.commands_old = self.commands
+        # this command ^^ does not work the way you think it does.
+        self.commands_old = {}
+        for key, value in self.commands.items():
+            self.commands_old[key] = value
+        #this.show_all()
 
     def prefs_expose(self, me, event):
         """ callback when prefs window is shown """
         # populate commands list with documentation
         me.liststore.clear()
-        for command_name,command in iter(self.cmds):
+        for command_name,command in self.cmds.items():
             for phrase in command["training_phrases"]:
                 me.liststore.append([command_name,phrase])
                 print(command_name,phrase,sep="  --  ")
@@ -526,28 +563,35 @@ class FreeSpeech(object):
             self.init_commands()
         else:
             if event!=Gtk.ResponseType.OK:
-                self.cmds = self.commands_old
+                for key, value in self.commands_old.items():
+                    self.comands[key] = value
             else:
                 self.write_prefs()
         me.hide()
         return True
 
     def edited_cb(self, cellrenderertext, path, new_text):
-        """ callback activated when treeview text edited """
+        """ callback activated when treeview text edited
+
+            I think this should be looked over for possible revision
+        """
         #~ self.prefsdialog.tree.path=new_text
         liststore=self.prefsdialog.liststore
         treeiter = liststore.get_iter(path)
         old_text = liststore.get_value(treeiter,0)
-        if new_text not in self.cmds:
+        if new_text not in self.commands:
             liststore.set_value(treeiter,0,new_text)
-            self.cmds[new_text]=self.cmds[old_text]
-            del(self.cmds[old_text])
+            self.commands[new_text]=self.commands[old_text]
+            del(self.commands[old_text])
             #~ print(old_text, new_text)
 
     def show_commands(self, argument=None):
         """ show these command preferences """
         me=self.prefsdialog
-        self.commands_old = self.commands
+        self.commands_old = {}
+        for key, value in self.commands.items():
+            self.commands_old[key] = value
+        # be careful ^^ with python '='!!
         me.show_all()
         me.present()
         return True # command completed successfully!
@@ -670,20 +714,14 @@ class FreeSpeech(object):
                 f.write(self.textbuf.get_text(self.bounds[0], self.bounds[1]))
         return True # command completed successfully!
 
-    def freespeech_help(self):
-        """ show these command preferences """
-        me=self.prefsdialog
-        self.commands_old = self.cmds
-        me.show_all()
-        me.present()
-        return True # command completed successfully!
-
     def mute(self, button):
         """Handle button presses."""
         if not button.get_active():
+            LOGGER.log_message("Beginning to listen again", DEBUG)
             button.set_label("Mute")
             self.start_listening()
         else:
+            LOGGER.log_message("Ceasing listening.", DEBUG)
             button.set_label("Speak")
             self.snore()
 
@@ -757,51 +795,76 @@ class FreeSpeech(object):
                 txt = txt + " "
         return txt
 
-    def start_listening(self, mike=None, wreck=None):
-        if os.access(os.path.join(CUSTOM_PSX_FILES_DIR, "mllr_matrix"), os.R_OK):
-            mllr = os.path.join(CUSTOM_PSX_FILES_DIR, "mllr_matrix")
-        else:
-            mllr = None
+    def start_listening(self, mike=None, wreck=None, mllr=None):
         if mike is None:
             mike = self.mike
         if wreck is None:
             wreck = self.wreck
         with mike as source:
-            LOGGER.log_message("Listening on source " + str(source), DEBUG)
+            LOGGER.log_message("Attempting to listen on source "
+                + str(source), DEBUG)
             wreck.adjust_for_ambient_noise(source)
-        self.snore = wreck.listen_in_background(mike, self.final_result,
+        self.snore = wreck.listen_in_background(mike, self.final_result)
+        if self.snore is None:
+            MESSENGER.show_msg(errormsg="Unable to begin listening.",
+                severity=ERROR)
+        else:
+            LOGGER.log_message("Successfully started listening on "
+                + str(mike) + "; snore with " + str(self.snore))
         # snore ^^ is a method that can be called to stop wreck/mike from listening.
-            mllr_file=mllr,
-            acoustic_model=os.path.join(CUSTOM_PSX_FILES_DIR, 'en-US'),
-            language_model=CONF_FILES['lang_model'],
-            phoneme_model=CONF_FILES['dic'])
 
-    def interpret(self, audio, wreck, engine, logger):
-        logger.log_message("Saving clip for correction")
+    def interpret(self, audio, wreck):
+        LOGGER.log_message("Saving clip for correction")
         self.last_audio = audio
-        logger.log_message("Interpreting audio...")
+        LOGGER.log_message("Interpreting audio...")
         try:
-            if engine is 'pocketsphinx':
-                return wreck.recognize_sphinx(audio)
-            elif engine is 'gv':
-                return wreck.recognize_google(audio)
+            if ENGINE is 'pocketsphinx':
+                if _check_file_(CONF_FILES['adapt_file']):
+                    return wreck.recognize_sphinx(audio,
+                        mllr_file=CONF_FILES['adapt_file'],
+                        acoustic_model=CUSTOM_PSX_FILES_DIR,
+                        language_model=CONF_FILES['lang_model'],
+                        phoneme_model=CONF_FILES['dic'])
+                else:
+                    return wreck.recognize_sphinx(audio,
+                        acoustic_model=CUSTOM_PSX_FILES_DIR,
+                        language_model=CONF_FILES['lang_model'],
+                        phoneme_model=CONF_FILES['dic'])
+            elif ENGINE is 'gv':
+                if API_KEY is None:
+                    return wreck.recognize_google(audio)
+                else:
+                    return wreck.recognize_google(audio, key=API_KEY)
             # etc engines todo
+            elif ENGINE is 'gcloud':
+                assert not isinstance (API_KEY, None)
+                return wreck.recognize_google_cloud(audio, credentials_json=API_KEY)
+            elif ENGINE is 'wit':
+                assert not isinstance (API_KEY, None)
+                return wreck.recognize_wit(audio, key=API_KEY)
+            elif ENGINE is 'ms':
+                assert not isinstance (API_KEY, None)
+                return wreck.recognize_bing(audio, key=API_KEY)
+            elif ENGINE is 'ibm':
+                assert not isinstance (API_KEY, None)
+                assert not isinstance (API_PW, None)
+                return wreck.recognize_ibm(audio, username=API_KEY, password=API_PW)
             else:
                 raise ValueError(engine)
         except speech_recognition.UnknownValueError:
-            logger.log_message("Nothing understood", WARN)
+            LOGGER.log_message("Nothing understood", WARN)
             return False
         except speech_recognition.RequestError as error:
-            logger.log_message("Sphinx error: {0}".format(error), ERROR)
+            LOGGER.log_message("Sphinx error: {0}".format(error), ERROR)
             return False
         except ValueError as err:
-            logger.log_message("Invalid engine specified" + engine, ERROR)
+            LOGGER.log_message("Invalid engine specified" + engine, ERROR)
             return False
 
 
     def final_result(self, wreck, audio):
         """Insert the final result into the textbox."""
-        hypothesis = self.interpret(audio, self.wreck, ENGINE, LOGGER)
+        hypothesis = self.interpret(audio, self.wreck)
         LOGGER.log_message("Received text is " + hypothesis)
         if not hypothesis:
             MESSENGER.show_msg("Invalid engine response. See the log for errors.")
@@ -830,7 +893,7 @@ class FreeSpeech(object):
 
     def train_sphinx(self, button):
         dialog      = Gtk.Dialog("Sphinx recognition correction",
-            self.window, Gtk.DialogFlags.DESTROY_WITH_PARENT,
+            self.window, Gtk.DialogFlags.MODAL,
             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
             Gtk.STOCK_OK, Gtk.ResponseType.OK))
         toplabel    = Gtk.Label ("Sphinx recognized this: ")
@@ -839,12 +902,17 @@ class FreeSpeech(object):
         textbuf.set_text(self.wreck.recognize_sphinx(self.last_audio))
         x           = Gtk.TextView()
         textbox     = x.new_with_buffer(textbuf)
-        textbuf.select_range(textbuf.get_bounds())
+        start, end  = textbuf.get_bounds()
+        textbuf.select_range(start, end)
+        dialog.vbox.pack_start(toplabel, False, True, 0)
+        dialog.vbox.pack_start(textbox, False, True, 0)
+        dialog.vbox.pack_start(bottomlabel, False, True, 0)
+        dialog.show_all()
         result      = dialog.run()
         if result is Gtk.ResponseType.OK:
             self.learn_new_words(text=textbuf.get_text())
             with open(TEMP_FILES['audio_file'], 'w') as af:
-                af.write(self.last_audio)
+                af.write(self.last_audio.get_wav_data(convert_rate=16000, convert_width=1))
             with open(TEMP_FILES['transcription'], 'w') as tf:
                 tf.write(textbuf.get_text())
             with open(TEMP_FILES['fileids'], 'w') as idf:
@@ -912,7 +980,7 @@ class FreeSpeech(object):
             LOGGER.log_message(_undent_('\
                 Error executing mllr_solve in freespeech.training_subprocess\n\
                 Error is: \"' + str(e.args) + "\""), SUBPROCESS_FAILURE)
-        os.link('mllr_matrix')
+        os.link('mllr_matrix',CONF_FILES['adapt_file'])
 
     def do_command(self, cmd):
         cmd.strip()
@@ -1065,6 +1133,7 @@ class Messenger(Gtk.Dialog):
             self.label.set_text(errormsg)
             self.run()
             self.hide()
+            LOGGER.log_message(errormsg, ERROR)
             exit(ERROR)
         else:    # Normal severity
             self.label.set_text(errormsg)
@@ -1077,18 +1146,25 @@ class Messenger(Gtk.Dialog):
         self.set_title()
         self.set_flags()
         self.set_buttons()
+
     def set_title(self,title="Error"):
         self.title = title
+
     def set_buttons(self, buttons=(Gtk.STOCK_OK,Gtk.ResponseType.OK)):
         self.buttons = buttons
+
     def set_flags(self,flags=Gtk.DialogFlags.MODAL):
         self.dialogFlags = flags
+
     def set_parent(self, parent=None):
         self.parent = parent
+
     def get_title(self):
         return self.title
+
     def get_buttons(self):
         return self.buttons
+
     def get_flags(self):
         return self.dialogFlags
 
@@ -1131,7 +1207,7 @@ class Recognizer(speech_recognition.Recognizer):
         if not hasattr(pocketsphinx, "Decoder") or not hasattr(pocketsphinx.Decoder, "default_config"):
             raise speech_recognition.RequestError("outdated PocketSphinx installation; ensure you have PocketSphinx version 0.0.9 or better.")
         if base_dir is None:
-                base_dir = os.path.join(REF_FILES['pocketsphinx_files_dir'])
+                base_dir = os.path.join(POCKETSPHINX_FILES_DIR)
         if not os.path.isdir(base_dir):
             raise speech_recognition.RequestError("missing PocketSphinx language data directory: \"{}\"".format(base_dir))
         if acoustic_model is None: # set to default for SpeechRecognition
@@ -1168,7 +1244,7 @@ class Recognizer(speech_recognition.Recognizer):
         config.set_string("-lm", language_model_file)
         config.set_string("-dict", phoneme_dictionary_file)
         # disable logging (logging causes unwanted output in terminal)
-        config.set_string("-logfn", CONF_FILES['pocketsphinx.log'])
+        config.set_string("-logfn", CONF_FILES['psx_log'])
         # set Linear regression file if exists:
         if mllr_file is not None:
             assert isinstance(mllr_file, str),\
@@ -1242,6 +1318,7 @@ class LogRecorder():
     """ handles logging of messages."""
     def __init__(self):
         pass
+
     def log_message(self, message, level=LOG):
         """" There are five log-levels, defined at the top of the file, as follows:
                 0: LOG
@@ -1253,7 +1330,7 @@ class LogRecorder():
             However, it would be trivial to filter these using if/elif/else
             below.
         """
-        print("FreezePeach: ", self.LOGLVL[level], " -- ", message)
+        print("FreeSpeech: ", self.LOGLVL[level], " -- ", message)
 
 if __name__ == "__main__":
     LOGGER    = LogRecorder()
