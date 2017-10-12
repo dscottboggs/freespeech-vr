@@ -43,15 +43,13 @@ this)
     sphinxtrain:                /usr/lib/sphinxtrain/*                                  755
 
 """
-
-import json, os, platform, re, shutil, speech_recognition
+import json, os, platform, re, send_key, shutil, speech_recognition
 import subprocess, sys, textwrap, time
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import GObject, Gtk # Gdk is not used, but was
 # originally listed as imported. Perhaps it will be required at
 # some point.
-from send_key import *
 GObject.threads_init()
 # removing gstreamer dependency
 
@@ -59,12 +57,24 @@ GObject.threads_init()
 APPNAME                 = 'FreeSpeech'
 SHORT_DESC              = 'Continuous engine-independent realtime speech recognition'
 ENGINE                  = 'pocketsphinx'
+"""
+Supported Engines: PocketSphinx, Google Voice, Google Cloud voice, Bing,
+Wit.ai, and IBM Watson. All of those require API keys to function, except
+for PocketSphinx, which functions entirely locally, and IBM, which requires
+both a user ID and a password. If you choose to change this to be a particular
+engine, you should change API_KEY to the API key (or username in the case
+of IBM watson), and the API_PW to the password if using IBM. Otherwise,
+leave these values as None. You can also select the engine from the command
+line options.
+"""
 API_KEY, API_PW         = None, None
 SUCCESSFULLY, ERROR, SUBPROCESS_FAILURE = 0, 1, 2
 LOW, NORMAL, HIGH, FATAL= 0, 1, 2, 3
 LOG, DEBUG, WARN        = 0, 3, 4
 # ERROR and SUBPROCESS_FAILURE were already set as exit codes, so no
 # need to set them again here
+DEBUG_FLAG              = True
+# change ^^ to False at beta release to remove debug messages from standard logs
 loglvl                  = [
     "LOG", "ERROR", "SUBPROCESS_MESSAGE", "DEBUG", "WARN"
 ]
@@ -204,8 +214,8 @@ def _prepare_corpus_(txt):
         if not re.match(r".*\w.*", tex):
             try:
                 corpus.remove(ind)
-            except:     # Except what?
-                pass
+            except Exception as e:     # Except what?
+                print("Unknown error in _prepare_corpus_: ", str(e.args))
             continue
         # lower case maybe
         if len(tex) > 1 and tex[1] > 'Z':
@@ -230,16 +240,17 @@ def _check_dir_(directory, recursive=None):
         try:
             if not os.path.isdir(directory):
                 os.makedirs(directory)
-                LOGGER.log_message("Successfully created "+ directory)
+                MESSENGER.show_msg("Successfully created "+ directory,
+                    log_level=LOG)
             else:
-                LOGGER.log_message("Successfully accessed "
+                MESSENGER.show_msg("Successfully accessed "
                     + directory, DEBUG)
         except OSError as this_error:
             errno, strerror = this_error.args
             MESSENGER.show_msg(
                 errormsg="in check_dir (" + str(directory) + ") -- "
                     + str(errno) + ": " + strerror,
-                severity=FATAL)
+                log_level=FATAL)
     else:
         assert isinstance(recursive, str),\
             "Source directory in _check_dir_ must be passed as a string."
@@ -249,7 +260,7 @@ def _check_dir_(directory, recursive=None):
             MESSENGER.show_msg(errormsg="File " + directory
                 + " exists and is not a directory, but " + directory
                 + " was attempted to be overwritten. This is strange."
-                + " Not continuing", severity=ERROR) # Exits.
+                + " Not continuing", log_level=ERROR) # Exits.
         shutil.copytree(recursive, directory)
 
 def _check_file_(filename, ref_file=None):
@@ -263,10 +274,10 @@ def _check_file_(filename, ref_file=None):
                     + str(ref_file) + " filename: " + filename)
             else:
                 shutil.copy(ref_file, filename)
-                LOGGER.log_message("Successfully created "
+                MESSENGER.show_msg("Successfully created "
                     + filename, DEBUG)
                 return True
-        LOGGER.log_message("Successfully accessed " + filename,
+        MESSENGER.show_msg("Successfully accessed " + filename,
             DEBUG)
         return True
     except OSError as this_error:
@@ -282,24 +293,31 @@ def _check_file_(filename, ref_file=None):
                 errormsg="In FreeSpeech; check_file.\nFile: "+ filename
                     + "\nReference file: " + str(ref_file) + "\nError Number: "
                     + str(errno) + "\nError Message: " + strerror,
-                severity=FATAL)
+                log_level=FATAL)
 
 def _check_args_(args):
-        if APPNAME not in args:
-            LOGGER.log_message(
-                "The appliction was started under a name other than "
-                + APPNAME + " this isn't a big deal but it is strange.")
-        for i, arg in zip(range(len(args)), args):
-            if arg is ("--help" or "-h"):
-                _display_help_()
-                exit(SUCCESSFULLY)
-            if arg is ("-e" or "--engine"):
-                _ENGINE_ = args[i+1]
+    global ENGINE, API_KEY, API_PW
+    if APPNAME not in args:
+        MESSENGER.show_msg(
+            "The appliction was started under a name other than "
+            + APPNAME + " this isn't a big deal but it is strange.",
+            LOG)
+    for i, arg in zip(range(len(args)), args):
+        MESSENGER.show_msg("Parseing arg: \"" + arg + "\"", DEBUG)
+        if re.fullmatch(re.compile("(--help)|(-h)"), arg):
+            _display_help_()
+            exit(SUCCESSFULLY)
+        elif re.fullmatch(re.compile("(-e)|(--engine)"), arg):
+            ENGINE = args[i+1]
+        elif re.fullmatch(re.compile("(-k)|(--api-key)|(-u)|(--username)"), arg):
+            API_KEY = args[i+1]
+        elif re.fullmatch(re.compile("(-pw)|(--api-pw)"), arg):
+            API_PW = args[i+1]
 
 def _display_help_():
     """ diplays a basic list of command line options. In this case
         we can assume this was run from the CLI and just use print,
-        rather than the more generic Logger() which is there to allow
+        rather than the more generic Messenger() which is there to allow
         easy conversion to logfiles rather than stdout logging
     """
     print(_undent_("""
@@ -310,11 +328,27 @@ def _display_help_():
         (like a custom recognition engine), you can run it from the command line with
         the following flags:
             -h      --help          Shows this help text
+
             -e [?]  --engine [?]    Used to select a recognition engine. Available
                 options:
                     pocketsphinx    CMU sphinx
                     gv              Google voice
-                    more options TODO"""))
+                    gcloud          Google Cloud voice
+                    wit             Facebook's Wit.ai
+                    ms              Microsoft's Bing/Cortana recognition
+                    ibm             IBM's Watson recognition engine
+
+            -k [?]  --api-key [?]   Select an API key for the session
+                                (or a username for IBM's service)
+
+            -pw [?] --api-pw [?]    Select an API password for the session
+
+            -u [?]  --username []   Synonym for --api-key
+
+            --debug                 Display debug-level log messages
+                                (currently default but will change to non-
+                                default at beta release)
+                    """))
 
 class FreeSpeech(object):
     """PyGTK continuous speech recognition scratchpad"""
@@ -335,9 +369,9 @@ class FreeSpeech(object):
         self.start_listening()
         #self.interface = Interface()
     def prereqs(self):
+        """ Checks to make sure everything is ready before running """
         # place to store the currently open file name, if any
-        _check_args_(sys.argv)
-        self.open_filename=''
+        self.open_filename = ""
         _check_dir_(CONFDIR)
         _check_file_(CONF_FILES['lang_ref'], REF_FILES['lang_ref'])
         _check_file_(CONF_FILES['dic'],      REF_FILES['dic'])
@@ -349,7 +383,7 @@ class FreeSpeech(object):
                 libfile not found: ''' + str(f) + '''
                 Please install sphinxtrain 5prealpha.
                 http://cmusphinx.sourceforge.net/'''),
-                severity=FATAL)
+                log_level=FATAL)
         _check_dir_(CUSTOM_PSX_FILES_DIR, recursive=POCKETSPHINX_FILES_DIR)
         #_check_file_(CONF_FILES['cmdjson'],  REF_FILES['cmdjson'])
         # Check for /usr/tmp, a library requires it.
@@ -359,14 +393,17 @@ class FreeSpeech(object):
             try:
                 os.symlink(os.path.abspath('tmp'), os.path.abspath(
                     os.path.join('usr', 'tmp')))
-                LOGGER.log_message("Python successfully linked /tmp to /usr/tmp", )
+                MESSENGER.show_msg(
+                    "Python successfully linked /tmp to /usr/tmp", DEBUG)
             except os.error:
-                LOGGER.log_message("Python failed to link /tmp to /usr/tmp. Perhaps with sudo?", WARN)
+                MESSENGER.show_msg(
+                    "Python failed to link /tmp to /usr/tmp. Perhaps with sudo?",
+                    WARN)
                 try:
                     subprocess.call("sudo ln -s /tmp /usr/tmp", shell=True,
                         executable='/bin/bash')
                 except OSError:
-                    LOGGER.log_message(_undent_("\
+                    MESSENGER.show_msg(_undent_("\
                         You do not have a /usr/tmp folder or it is not \
                         writable. Attempts to resolve this have failed."),
                         ERROR)
@@ -378,7 +415,7 @@ class FreeSpeech(object):
                 # will never be reached but I'd rather have it there
                 # in case something bizzarre happens so I can track
                 # it down.
-                LOGGER.log_message(_undent_("\
+                MESSENGER.show_msg(_undent_("\
                     Uncaught error creating /usr/tmp. Does it \
                     exist? Is it writable?"), ERROR)
                 exit(ERROR)
@@ -516,7 +553,7 @@ class FreeSpeech(object):
         for command_name,command in self.cmds.items():
             for phrase in command["training_phrases"]:
                 me.liststore.append([command_name,phrase])
-                print(command_name,phrase,sep="  --  ")
+                print(command_name, phrase, sep="  --  ")
 
     def write_prefs(self):
         """ write command list to file """
@@ -544,7 +581,7 @@ class FreeSpeech(object):
         except OSError as e:
             no,msg = e.args
             MESSENGER.show(errormsg = no + ": " + msg
-                + "\n...Occurred in read_prefs()", severity=FATAL)
+                + "\n...Occurred in read_prefs()", log_level=FATAL)
 
     def prefs_response(self, me, event):
         """ make prefs dialog non-modal by using response event
@@ -619,10 +656,10 @@ class FreeSpeech(object):
                         f.write(line + '\n')
         except FileNotFoundError as e:
             num,msg=e.args
-            MESSENGER.show(errormsg=num + ": " + msg, severity=FATAL)
+            MESSENGER.show(errormsg=num + ": " + msg, log_level=FATAL)
         except PermissionError as e:
             num,msg=e.args
-            MESSENGER.show(errormsg=num + ": " + msg, severity=FATAL)
+            MESSENGER.show(errormsg=num + ": " + msg, log_level=FATAL)
 
         # cat command
         if platform.system()=='Windows':
@@ -632,7 +669,8 @@ class FreeSpeech(object):
 
         # compile a vocabulary
         # http://www.speech.cs.cmu.edu/SLM/toolkit_documentation.html#text2wfreq
-        LOGGER.log_message("Compiling vocabulary and saving to file.")
+        MESSENGER.show_msg("Compiling vocabulary and saving to file.",
+            log_level=LOG)
         try:
             subprocess.check_call(catcmd
                 + (CONF_FILES["cmdtext"] + ' ') * 4
@@ -645,11 +683,11 @@ class FreeSpeech(object):
         except subprocess.CalledProcessError as e:
             num,msg = e.args
             MESSENGER.show(errormsg= 'Trouble writing '
-                + CONF_FILES["vocab"] + ": " + msg, severity=FATAL)
+                + CONF_FILES["vocab"] + ": " + msg, log_level=FATAL)
         # update the idngram\
         # http://www.speech.cs.cmu.edu/SLM/toolkit_documentation.html#text2idngram
-        LOGGER.log_message(
-            "Updating idngram based on the new vocabulary")
+        MESSENGER.show_msg(
+            "Updating idngram based on the new vocabulary", LOG)
         try:
             subprocess.check_call('text2idngram -vocab '
                 + CONF_FILES["vocab"] + ' -n 3 < '
@@ -658,11 +696,11 @@ class FreeSpeech(object):
         except subprocess.CalledProcessError as e:
             num,msg = e.args
             MESSENGER.show(errormsg= 'Trouble writing '
-                + CONF_FILES["idngram"] + ": " + msg, severity=FATAL)
+                + CONF_FILES["idngram"] + ": " + msg, log_level=FATAL)
 
         # (re)build arpa language model
         # http://drupal.cs.grinnell.edu/~stone/courses/computational-linguistics/ngram-lab.html
-        LOGGER.log_message("Rebuilding arpa language model")
+        MESSENGER.show_msg("Rebuilding arpa language model", LOG)
         try:
             subprocess.check_call('idngram2lm -idngram -n 3 -verbosity 2 '
                 + CONF_FILES["idngram"] + ' -vocab ' + CONF_FILES["vocab"]
@@ -717,11 +755,11 @@ class FreeSpeech(object):
     def mute(self, button):
         """Handle button presses."""
         if not button.get_active():
-            LOGGER.log_message("Beginning to listen again", DEBUG)
+            MESSENGER.show_msg("Beginning to listen again", DEBUG)
             button.set_label("Mute")
             self.start_listening()
         else:
-            LOGGER.log_message("Ceasing listening.", DEBUG)
+            MESSENGER.show_msg("Ceasing listening.", DEBUG)
             button.set_label("Speak")
             self.snore()
 
@@ -801,35 +839,38 @@ class FreeSpeech(object):
         if wreck is None:
             wreck = self.wreck
         with mike as source:
-            LOGGER.log_message("Attempting to listen on source "
+            MESSENGER.show_msg("Attempting to listen on source "
                 + str(source), DEBUG)
             wreck.adjust_for_ambient_noise(source)
         self.snore = wreck.listen_in_background(mike, self.final_result)
         if self.snore is None:
             MESSENGER.show_msg(errormsg="Unable to begin listening.",
-                severity=ERROR)
+                log_level=ERROR)
         else:
-            LOGGER.log_message("Successfully started listening on "
-                + str(mike) + "; snore with " + str(self.snore))
+            MESSENGER.show_msg("Successfully started listening on "
+                + str(mike) + "; snore with " + str(self.snore), LOG)
         # snore ^^ is a method that can be called to stop wreck/mike from listening.
 
     def interpret(self, audio, wreck):
-        LOGGER.log_message("Saving clip for correction")
+        MESSENGER.show_msg("Saving clip for correction", DEBUG)
         self.last_audio = audio
-        LOGGER.log_message("Interpreting audio...")
+        self.clip_cursor_begin = self.textbuf.get_bounds()[1]
+        MESSENGER.show_msg("Interpreting audio...", LOG)
         try:
             if ENGINE is 'pocketsphinx':
                 if _check_file_(CONF_FILES['adapt_file']):
-                    return wreck.recognize_sphinx(audio,
+                    self.result_text = wreck.recognize_sphinx(audio,
                         mllr_file=CONF_FILES['adapt_file'],
                         acoustic_model=CUSTOM_PSX_FILES_DIR,
                         language_model=CONF_FILES['lang_model'],
                         phoneme_model=CONF_FILES['dic'])
+                    return self.result_text
                 else:
-                    return wreck.recognize_sphinx(audio,
+                    self.result_text = wreck.recognize_sphinx(audio,
                         acoustic_model=CUSTOM_PSX_FILES_DIR,
                         language_model=CONF_FILES['lang_model'],
                         phoneme_model=CONF_FILES['dic'])
+                    return self.result_text
             elif ENGINE is 'gv':
                 if API_KEY is None:
                     return wreck.recognize_google(audio)
@@ -852,20 +893,20 @@ class FreeSpeech(object):
             else:
                 raise ValueError(engine)
         except speech_recognition.UnknownValueError:
-            LOGGER.log_message("Nothing understood", WARN)
+            MESSENGER.show_msg("Nothing understood", WARN)
             return False
         except speech_recognition.RequestError as error:
-            LOGGER.log_message("Sphinx error: {0}".format(error), ERROR)
+            MESSENGER.show_msg("Sphinx error: {0}".format(error), ERROR)
             return False
         except ValueError as err:
-            LOGGER.log_message("Invalid engine specified" + engine, ERROR)
+            MESSENGER.show_msg("Invalid engine specified" + engine, ERROR)
             return False
 
 
     def final_result(self, wreck, audio):
         """Insert the final result into the textbox."""
         hypothesis = self.interpret(audio, self.wreck)
-        LOGGER.log_message("Received text is " + hypothesis)
+        MESSENGER.show_msg("Received text is \"" + hypothesis + "\"", LOG)
         if not hypothesis:
             MESSENGER.show_msg("Invalid engine response. See the log for errors.")
         # All this stuff appears as one single action
@@ -875,16 +916,16 @@ class FreeSpeech(object):
         self.bounds = self.textbuf.get_bounds()
         # Fix punctuation
         hypothesis = self.collapse_punctuation(hypothesis, \
-        self.bounds[1].starts_line())
+            self.bounds[1].starts_line())
         # handle commands
         if not self.do_command(hypothesis):
             self.textbuf.delete_selection(True, self.text.get_editable())
             self.textbuf.insert_at_cursor(hypothesis)
             # send keystrokes to the desktop?
             if self.echo_keys_button.get_active():
-                send_string(hypothesis)
+                send_key.send_string(hypothesis)
                 display.sync()
-            LOGGER.log_message(hypothesis + " executed.")
+            MESSENGER.show_msg(hypothesis + " executed.", DEBUG)
         ins = self.textbuf.get_insert()
         itera = self.textbuf.get_iter_at_mark(ins) # iter is a python keyword
         # @ Henry Kroll WTF does this do?
@@ -899,32 +940,50 @@ class FreeSpeech(object):
         toplabel    = Gtk.Label ("Sphinx recognized this: ")
         bottomlabel = Gtk.Label ("What did you really say?")
         textbuf     = Gtk.TextBuffer()
-        textbuf.set_text(self.wreck.recognize_sphinx(self.last_audio))
+        if self.result_text is None:
+            MESSENGER.show_msg(_undent_("\
+                There is no result recorded. Perhaps nothing has been said\n\
+                yet or the engine is not PocketSphinx", WARN)
+            return
+        textbuf.set_text(self.result_text)
         x           = Gtk.TextView()
         textbox     = x.new_with_buffer(textbuf)
         start, end  = textbuf.get_bounds()
         textbuf.select_range(start, end)
-        dialog.vbox.pack_start(toplabel, False, True, 0)
-        dialog.vbox.pack_start(textbox, False, True, 0)
-        dialog.vbox.pack_start(bottomlabel, False, True, 0)
+        dialog.vbox.pack_start(toplabel, True, False, 5)
+        dialog.vbox.pack_start(textbox, True, False, 5)
+        dialog.vbox.pack_start(bottomlabel, True, False, 5)
         dialog.show_all()
         result      = dialog.run()
-        if result is Gtk.ResponseType.OK:
-            self.learn_new_words(text=textbuf.get_text())
+        if result == Gtk.ResponseType.OK:
+            MESSENGER.show_msg("Correcting pocketsphinx model with text: \""
+                + textbuf.get_text(textbuf.get_bounds()[0],
+                    textbuf.get_bounds()[1], False)
+                + "\"", DEBUG)
+            end = self.textbuf.get_bounds()[1]
+            beg = self.textbuf.get_bounds()[0]
+            self.textbuf.delete(self.clip_cursor_begin,end)
+            self.textbuf.insert(self.textbuf.get_insert(), textbuf.get_text(
+                    beg, end, False))
+            # ^^ replaces recently spoken text with correction from box.
             with open(TEMP_FILES['audio_file'], 'w') as af:
                 af.write(self.last_audio.get_wav_data(convert_rate=16000, convert_width=1))
             with open(TEMP_FILES['transcription'], 'w') as tf:
-                tf.write(textbuf.get_text())
+                tf.write(textbuf.get_text(beg, end, False))
             with open(TEMP_FILES['fileids'], 'w') as idf:
                 idf.write("(" + str(TEMP_FILES['audio_file']) + ")"
-                    + str(textbuf.get_text()))
+                    + str(textbuf.get_text(beg, end, False)))
             os.link(CUSTOM_PSX_FILES_DIR,   # os.link() is for hardlinks
                 os.path.join(TEMPDIR, 'acoustic_model'))
             os.link(CONF_FILES['dic'],
                 os.path.join(TEMPDIR, 'custom.dic'))
             os.link(CONF_FILES['lang_model'], os.path.join(TEMPDIR, 'lm.bin'))
+            MESSENGER.show_msg("Correction files prepared. Training model...")
             self.training_subprocess()
         else:
+            MESSENGER.show_msg(
+                "PocketSphinx training cancelled. Result from dialog: "
+                + str(result), LOG)
             dialog.hide()
 
     def training_subprocess(self):
@@ -946,8 +1005,10 @@ class FreeSpeech(object):
                 '-eo', 'mfc',
                 '-mswav', 'yes'
             ])
+            MESSENGER.show_msg(
+                "FreeSpeech.training_subprocess step 1 complete", DEBUG)
         except subprocess.CalledProcessError as e:
-            LOGGER.log_message(_undent_('\
+            MESSENGER.show_msg(_undent_('\
                 Error executing sphinx_fe in freespeech.training_subprocess\n\
                 Error is: \"' + str(e.args) + "\""), SUBPROCESS_FAILURE)
         try:
@@ -965,8 +1026,10 @@ class FreeSpeech(object):
                 '-lsnfn', TEMP_FILES['transcription'],
                 '-accumdir'
             ])
+            MESSENGER.show_msg(
+                "FreeSpeech.training_subprocess step 2 complete", DEBUG)
         except subprocess.CalledProcessError as e:
-            LOGGER.log_message(_undent_('\
+            MESSENGER.show_msg(_undent_('\
                 Error executing bw in freespeech.training_subprocess\n\
                 Error is: \"' + str(e.args) + "\""), SUBPROCESS_FAILURE)
         try:
@@ -976,17 +1039,23 @@ class FreeSpeech(object):
                 '-outmllrfn', 'mllr_matrix',
                 '-accumdir', TEMPDIR
             ])
+            MESSENGER.show_msg(
+                "FreeSpeech.training_subprocess step 3 complete", DEBUG)
         except subprocess.CalledProcessError as e:
-            LOGGER.log_message(_undent_('\
+            MESSENGER.show_msg(_undent_('\
                 Error executing mllr_solve in freespeech.training_subprocess\n\
                 Error is: \"' + str(e.args) + "\""), SUBPROCESS_FAILURE)
         os.link('mllr_matrix',CONF_FILES['adapt_file'])
+        if os.access(CONF_FILES['adapt_file'], os.W_OK):
+            MESSENGER.show_msg("File created: " + CONF_FILES['adapt_file'],
+                DEBUG)
 
     def do_command(self, cmd):
         cmd.strip()
         cmd.lower()
-        if cmd in self.commands:
-            return eval(self.commands[cmd])
+        for k,v in self.commands.items():
+            if re.match(re.compile(k), cmd):
+                return eval(self.commands[cmd])
         return False
 
     """Process spoken commands"""
@@ -1017,7 +1086,7 @@ class FreeSpeech(object):
                 self.textbuf.select_range(self.bounds[0], self.bounds[1])
                 return True # success
             search_back = self.searchback(self.bounds[1], argument)
-            if None == search_back:
+            if search_back is None:
                 return True
             # also select the space before it
             search_back[0].backward_char()
@@ -1035,7 +1104,7 @@ class FreeSpeech(object):
                 self.textbuf.delete(start, end)
                 return True # success
             search_back = self.searchback(self.bounds[1], argument)
-            if None == search_back:
+            if search_back is None:
                 return True
             # also select the space before it
             search_back[0].backward_char()
@@ -1047,7 +1116,7 @@ class FreeSpeech(object):
         """ insert after [text] """
         arg = re.match(r'\w+(.*)', argument).group(1)
         search_back = self.searchback(self.bounds[1], arg)
-        if None == search_back:
+        if search_back is None:
             return True
         if re.match("^after", argument):
             self.textbuf.place_cursor(search_back[1])
@@ -1073,7 +1142,7 @@ class FreeSpeech(object):
                 self.textbuf.delete_selection(True, self.text.get_editable())
                 if self.echo_keys_button.get_active():
                     b = "".join(["\b" for x in range(0,len(scratch))])
-                    send_string(b)
+                    send_key.send_string(b)
                     display.sync()
                 return True # command completed successfully!
         return False
@@ -1081,7 +1150,7 @@ class FreeSpeech(object):
         """ start a new paragraph """
         self.textbuf.insert_at_cursor('\n')
         if self.echo_keys_button.get_active():
-            send_string("\n")
+            send_key.send_string("\n")
             display.sync()
         return True # command completed successfully!
 
@@ -1102,44 +1171,64 @@ class Messenger(Gtk.Dialog):
     methods which act upon dialogs should be moved to this class, and
     called upon the object, rather than the methods being in the main
     FreeSpeech class.
+
+    There are five log-levels, defined at the top of the file, as follows:
+                0: LOG
+                1: ERROR
+                2: SUBPROCESS_FAILURE
+                3: DEBUG
+                4: WARN
     """
     title       = "Error"
     parent      = None
-    dialogFlags = Gtk.DialogFlags.MODAL
+    dialog_flags = Gtk.DialogFlags.MODAL
     buttons     = 0
     label       = Gtk.Label("Nice label")
 
-    def __init__(self, title="Error", parent=None, dialogFlags=Gtk.DialogFlags.MODAL,
+    def __init__(self, title="Error", parent=None, dialog_flags=Gtk.DialogFlags.MODAL,
             buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK)):
         # Defaults are for error messages.
         self.set_title(title)
         self.set_parent(parent)
-        self.set_flags(dialogFlags)
+        self.set_flags(dialog_flags)
         self.set_buttons(buttons)
         # this ^^ for some reason includes the default value as well as things explicitly set
         #TODO ^^
         #FIXME ^^
-        super().__init__(self.title, self.parent, self.dialogFlags, self.buttons)
+        super().__init__(self.title, self.parent, self.dialog_flags, self.buttons)
         self.vbox.pack_start(self.label, False, False, False)
         self.label.show()
 
-    def show_msg(self, severity=NORMAL, parent=None,
-            errormsg="no error message has been included"):
+    def show_msg(self, errormsg="no error message has been included",
+            log_level=NORMAL, parent=None):
         if parent is None:
             parent = self
-        if severity is LOW:
-            LOGGER.log_message(errormsg, ERROR)
-        elif severity is FATAL:
+        if log_level is DEBUG:
+            if DEBUG_FLAG:
+                print("FreeSpeech: DEBUG -- ", errormsg)
+        elif log_level is LOG:
+            print("FreeSpeech: LOG -- ", errormsg)
+        elif log_level is SUBPROCESS_FAILURE:
+            print("FreeSpeech: SUBPROCESS_FAILURE -- ", errormsg)
+            self.set_title("Subprocess error")
             self.label.set_text(errormsg)
             self.run()
             self.hide()
-            LOGGER.log_message(errormsg, ERROR)
+        elif log_level is FATAL or ERROR:
+            self.label.set_text(errormsg)
+            print("FreeSpeech: ERROR -- ", errormsg)
+            self.run()
+            self.hide()
             exit(ERROR)
-        else:    # Normal severity
+        elif log_level is NORMAL or WARN:
+            print("FreeSpeech: WARN -- ", errormsg)
             self.label.set_text(errormsg)
             self.run()
             self.hide()
             self.set_defaults()
+        else:
+            print("No log-level given." + errormsg)
+            exit(0)
 
     # getters and setters
     def set_defaults(self):
@@ -1154,7 +1243,7 @@ class Messenger(Gtk.Dialog):
         self.buttons = buttons
 
     def set_flags(self,flags=Gtk.DialogFlags.MODAL):
-        self.dialogFlags = flags
+        self.dialog_flags = flags
 
     def set_parent(self, parent=None):
         self.parent = parent
@@ -1166,7 +1255,7 @@ class Messenger(Gtk.Dialog):
         return self.buttons
 
     def get_flags(self):
-        return self.dialogFlags
+        return self.dialog_flags
 
 class Recognizer(speech_recognition.Recognizer):
     """ A subclass of the Recognizer class with the purpose of
@@ -1207,7 +1296,7 @@ class Recognizer(speech_recognition.Recognizer):
         if not hasattr(pocketsphinx, "Decoder") or not hasattr(pocketsphinx.Decoder, "default_config"):
             raise speech_recognition.RequestError("outdated PocketSphinx installation; ensure you have PocketSphinx version 0.0.9 or better.")
         if base_dir is None:
-                base_dir = os.path.join(POCKETSPHINX_FILES_DIR)
+            base_dir = os.path.join(POCKETSPHINX_FILES_DIR)
         if not os.path.isdir(base_dir):
             raise speech_recognition.RequestError("missing PocketSphinx language data directory: \"{}\"".format(base_dir))
         if acoustic_model is None: # set to default for SpeechRecognition
@@ -1313,27 +1402,8 @@ class Recognizer(speech_recognition.Recognizer):
         if hypothesis is not None: return hypothesis.hypstr
         raise speech_recognition.UnknownValueError()
         # ^^ no transcriptions available
-class LogRecorder():
-    LOGLVL = ["LOG", "ERROR", "SUBPROCESS_MESSAGE", "DEBUG", "WARN"]
-    """ handles logging of messages."""
-    def __init__(self):
-        pass
-
-    def log_message(self, message, level=LOG):
-        """" There are five log-levels, defined at the top of the file, as follows:
-                0: LOG
-                1: ERROR
-                2: SUBPROCESS_FAILURE
-                3: DEBUG
-                4: WARN
-            Currently these levels all function the same: they print to stdout.
-            However, it would be trivial to filter these using if/elif/else
-            below.
-        """
-        print("FreeSpeech: ", self.LOGLVL[level], " -- ", message)
 
 if __name__ == "__main__":
-    LOGGER    = LogRecorder()
     MESSENGER = Messenger(title="Error!")
     app = FreeSpeech()
     Gtk.main()
