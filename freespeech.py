@@ -17,6 +17,10 @@
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
      GNU General Public License for more details.
 
+    This version of FreeSpeech (the one forked by Scott from Henry's version)
+    is explicity in Python3, as opposed to Henry's orignal dual-support model.
+    See https://www.python.org/dev/peps/pep-0373/
+
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -943,7 +947,7 @@ class FreeSpeech(object):
         if self.result_text is None:
             MESSENGER.show_msg(_undent_("\
                 There is no result recorded. Perhaps nothing has been said\n\
-                yet or the engine is not PocketSphinx", WARN)
+                yet or the engine is not PocketSphinx", WARN))
             return
         textbuf.set_text(self.result_text)
         x           = Gtk.TextView()
