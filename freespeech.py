@@ -48,7 +48,8 @@ this)
 
 """
 import json, os, platform, re, send_key, shutil, speech_recognition
-import subprocess, sys, textwrap, time
+import subprocess, sys, time
+from textwrap import dedent
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import GObject, Gtk # Gdk is not used, but was
@@ -142,11 +143,6 @@ else:
     pass
     # todo windows
 ##  !!!     Global Functions    !!!
-def _undent_(text):
-    """ shortcut for str(textwrap.dedent())"""
-    assert isinstance(text, str),\
-        "Text to be un-indented must be a string! Received: " + str(text)
-    return str(textwrap.dedent(text))
 
 def _expand_punctuation_(corpus):
     """ tweak punctuation to match dictionary utterances
@@ -242,13 +238,14 @@ def _check_dir_(directory, recursive=None):
     """
     if recursive is None:
         try:
-            if not os.path.isdir(directory):
+            if os.path.isdir(directory):
+                MESSENGER.show_msg("Successfully accessed "
+                    + directory, DEBUG)
+            else:
                 os.makedirs(directory)
                 MESSENGER.show_msg("Successfully created "+ directory,
                     log_level=LOG)
-            else:
-                MESSENGER.show_msg("Successfully accessed "
-                    + directory, DEBUG)
+
         except OSError as this_error:
             errno, strerror = this_error.args
             MESSENGER.show_msg(
@@ -274,8 +271,10 @@ def _check_file_(filename, ref_file=None):
     try:
         if not os.access(filename, os.R_OK):
             if ref_file is None:
-                raise OSError("In global _check_file_(), ref_file was none: "
+                MESSENGER.show_msg(
+                    errormsg="In global _check_file_(), ref_file was none: "
                     + str(ref_file) + " filename: " + filename)
+                return False
             else:
                 shutil.copy(ref_file, filename)
                 MESSENGER.show_msg("Successfully created "
@@ -290,8 +289,6 @@ def _check_file_(filename, ref_file=None):
         else:
             errno = -1337
             strerror = str(this_error.args)
-        if ref_file is None:
-            return False
         else:
             MESSENGER.show_msg(
                 errormsg="In FreeSpeech; check_file.\nFile: "+ filename
@@ -324,7 +321,7 @@ def _display_help_():
         rather than the more generic Messenger() which is there to allow
         easy conversion to logfiles rather than stdout logging
     """
-    print(_undent_("""
+    print(dedent("""
         FreeSpeech -- continuous engine-independent speech recognition text editor
 
         FreeSpeech is a GUI application that can be launched without a command line
@@ -382,7 +379,7 @@ class FreeSpeech(object):
         _check_file_(CONF_FILES['lang_model'],     REF_FILES['lang_model'])
         for k, f in SpxTrn_REF_FILES.items():
             if not _check_file_(f):
-                MESSENGER.show_msg(errormsg=_undent_('''
+                MESSENGER.show_msg(errormsg=dedent('''
                 SphinxTrain doesn't seem to be installed.
                 libfile not found: ''' + str(f) + '''
                 Please install sphinxtrain 5prealpha.
@@ -407,7 +404,7 @@ class FreeSpeech(object):
                     subprocess.call("sudo ln -s /tmp /usr/tmp", shell=True,
                         executable='/bin/bash')
                 except OSError:
-                    MESSENGER.show_msg(_undent_("\
+                    MESSENGER.show_msg(dedent("\
                         You do not have a /usr/tmp folder or it is not \
                         writable. Attempts to resolve this have failed."),
                         ERROR)
@@ -419,7 +416,7 @@ class FreeSpeech(object):
                 # will never be reached but I'd rather have it there
                 # in case something bizzarre happens so I can track
                 # it down.
-                MESSENGER.show_msg(_undent_("\
+                MESSENGER.show_msg(dedent("\
                     Uncaught error creating /usr/tmp. Does it \
                     exist? Is it writable?"), ERROR)
                 exit(ERROR)
@@ -515,7 +512,7 @@ class FreeSpeech(object):
             self.init_commands()
         else:
             self.read_prefs()
-        this.label = Gtk.Label(_undent_("\
+        this.label = Gtk.Label(dedent("\
             Double-click to change command wording.\n\
             If new commands don't work click the learn button to train them."))
         this.vbox.pack_start(this.label, False, False, False)
@@ -945,7 +942,7 @@ class FreeSpeech(object):
         bottomlabel = Gtk.Label ("What did you really say?")
         textbuf     = Gtk.TextBuffer()
         if self.result_text is None:
-            MESSENGER.show_msg(_undent_("\
+            MESSENGER.show_msg(dedent("\
                 There is no result recorded. Perhaps nothing has been said\n\
                 yet or the engine is not PocketSphinx", WARN))
             return
@@ -1012,7 +1009,7 @@ class FreeSpeech(object):
             MESSENGER.show_msg(
                 "FreeSpeech.training_subprocess step 1 complete", DEBUG)
         except subprocess.CalledProcessError as e:
-            MESSENGER.show_msg(_undent_('\
+            MESSENGER.show_msg(dedent('\
                 Error executing sphinx_fe in freespeech.training_subprocess\n\
                 Error is: \"' + str(e.args) + "\""), SUBPROCESS_FAILURE)
         try:
@@ -1033,7 +1030,7 @@ class FreeSpeech(object):
             MESSENGER.show_msg(
                 "FreeSpeech.training_subprocess step 2 complete", DEBUG)
         except subprocess.CalledProcessError as e:
-            MESSENGER.show_msg(_undent_('\
+            MESSENGER.show_msg(dedent('\
                 Error executing bw in freespeech.training_subprocess\n\
                 Error is: \"' + str(e.args) + "\""), SUBPROCESS_FAILURE)
         try:
@@ -1046,7 +1043,7 @@ class FreeSpeech(object):
             MESSENGER.show_msg(
                 "FreeSpeech.training_subprocess step 3 complete", DEBUG)
         except subprocess.CalledProcessError as e:
-            MESSENGER.show_msg(_undent_('\
+            MESSENGER.show_msg(dedent('\
                 Error executing mllr_solve in freespeech.training_subprocess\n\
                 Error is: \"' + str(e.args) + "\""), SUBPROCESS_FAILURE)
         os.link('mllr_matrix',CONF_FILES['adapt_file'])
@@ -1287,7 +1284,7 @@ class Recognizer(speech_recognition.Recognizer):
             "base directory path must be formatted as a string"
         assert keyword_entries is None or all(isinstance(keyword,
             (type(""), type(u''))) and 0 <= sensitivity <= 1 for
-                keyword, sensitivity in keyword_entries), _undent_("\
+                keyword, sensitivity in keyword_entries), dedent("\
                 ``keyword_entries`` must be ``None`` or a list of \
                 pairs of strings and numbers between 0 and 1")
         # Holy crap that's a complicated line ^^

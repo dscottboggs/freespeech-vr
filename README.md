@@ -1,26 +1,26 @@
 # FreeSpeech-vr
 
-*Experimental version for Python3, Gtk3, and Gstreamer1.0.*
+*Experimental version for Python3, Gtk3, and Python's speech_recognition*
 
-FreeSpeech is a free and open-source (FOSS), cross-platform Python front-end for Carnegie Mellon University's excellent open source CMU Sphinx speech recognition toolkit.
+FreeSpeech is a free and open-source (FOSS), Python front-end for Carnegie Mellon University's excellent open source CMU Sphinx speech recognition toolkit, as well as several cloud-based speech-recognition engines.
 
-In addition to dictation, FreeSpeech provides dynamic language learning, voice commands, and keyboard emulation, so users can dictate into other apps, remote terminals, and virtual machines.
+In addition to dictation, FreeSpeech provides an interface dynamic language learning with pocketsphinx, voice commands, and keyboard emulation, so users can dictate into other apps, remote terminals, and virtual machines.
 
-Get FreeSpeech via git from [Github](https://github.com/themanyone/freespeech-vr).
+Get FreeSpeech via git from [Github](https://github.com/dscottboggs/freespeech-vr).
 
 ## Installation
 
-Windows: Installation might work using [ossbuild](https://code.google.com/p/ossbuild/) for gstreamer. Will update this once we get a windows machine to test it.
+# Windows: Most likely not. The application was written to be easily adapted to cross-platform capabilities, and is easily readable, but I am not familiar enough with the Windows filesystem nor the Windows installation process to be able to write in such capabilities. Specifically, the CMU/Cam statistical modelling toolkit requires access to a '/usr/tmp' and since windows has no '/' it cannot access said folder. If a windows developer could provide a pull request to resolve this issue it would be greatly appreciated. Otherwise, my only recommendations are Linux, virtual machines, or containers.
 
-## Linux/Cygwin
+# Linux/Cygwin
 The following packages should be installed through the package manager.
 
 * [Python3](https://www.python.org/)
 * [python3-gobject](https://wiki.gnome.org/Projects/PyGObject)
 * [python-xlib](https://python-xlib.sourceforge.net/)
 * [python-simplejson](https://undefined.org/python/#simplejson)
-* [gstreamer-1.0, including gstreamer-python](https://gstreamer.freedesktop.org/)
-* [pocketsphinx and sphinxbase](http://cmusphinx.sourceforge.net/)
+* [pocketsphinx, sphinxbase, and sphinxtrain](http://cmusphinx.sourceforge.net/) -- possibly available through your package manager. Check to be sure you can get version 5pre-alpha
+* [speech_recognition python library](https://github.com/Uberi/speech_recognition/) -- not available on Debian, possibly others. Download from git and place in proper location
 * [CMU-Cambridge Statistical Language Modeling Toolkit v2](http://www.speech.cs.cmu.edu/SLM/CMU-Cam_Toolkit_v2.tar.gz) ([documentation](http://www.speech.cs.cmu.edu/SLM/toolkit_documentation.html))
 
 Distro packages may not exist yet. Compile sphinxbase and pocketsphinx from source. Use ./configure --prefix=/usr/local --libdir=/usr/local/lib64 and set environment variable for gstreamer1:
@@ -62,7 +62,7 @@ Users should be able to record and play back audio at good volume, but not so hi
 ```bash
 arecord temp.wav -r 16000
 aplay temp.wav
-``` 
+```
 
 Test pocketsphinx
 
@@ -75,7 +75,7 @@ Say something. (It should print lots of spam while doing some (very basic) speec
 Download [CMU-Cam_Toolkit_v2](http://www.speech.cs.cmu.edu/SLM/CMU-Cam_Toolkit_v2.tar.gz) and unpack it. Read the instructions in the README and edit the Makefile. To summarize, most PC hardware is what they call "little-endian" and it requires this change: Edit `CMU-Cam_Toolkit_v2/src/Makefile` and remove the # sign in front of this line:
 
 ```bash
-BYTESWAP_FLAG	= -DSLM_SWAP_BYTES
+BYTESWAP_FLAG   = -DSLM_SWAP_BYTES
 ```
 
 
